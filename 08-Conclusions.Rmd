@@ -1,0 +1,4 @@
+
+# Conclusions
+
+I sincerely hope this book extends your data visualization capabilities. Or, at the very least, I hope reading through this book was not a complete waste of your time! I owe so much of my career enjoyment to R and **ggplot2**, and I wanted to *pay it forward*, so to speak. I fully understand that the targeted audience for a book like this is quite small! Nonetheless, I welcome feedback, comments, and questions about this book or otherwise. Feel free to email me (`speedandpowerlab@gmail.com`) or find me on Linkedin. 

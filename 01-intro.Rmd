@@ -1,0 +1,1398 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+```
+
+# Introduction to Formula 1
+
+What is Formula 1? The word *formula* refers to a particular ruleset that teams' cars must conform to, and  *1* designates that this classification is the highest level of motorsport competition. So, *Formula 1* racing is the highest class of international open-wheel single-seater formula racing sanctioned by the Fédération Internationale de l'Automobile (FIA). A Formula 1 season includes a series of *Grands Prix* (races) that take place across the globe on various types of tracks, ranging from closed public city streets to designated racing circuits and modern manufactured street-circuits.
+
+
+Like most professional sports, Formula 1 is also big business! Thanks in part to the popular Netflix series *Drive to Survive*, Formula 1 has experienced a recent explosion of popularity in the United States (I am one of these recent converts!). Along with this uptick in popularity, Formula 1 teams have also experienced a surge in valuation. 
+
+As an initial example using **ggplot**, I will create a bar chart to visualize this trend in team valuation. Prior to creating the bar chart with the `ggplot()` function, I have to create the dataframe and then reshape it to a *longer format* using the `pivot_longer()` function.
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to pivot data into a longer format in R**
+:::
+
+`pivot_longer()` *lengthens* data, increasing the number of rows and decreasing the number of columns. 
+
+To *widen* the data, use the `pivot_wider()` function, which is the inverse transformation. 
+
+For more information on `pivot_longer()` and `pivot_wider()`, visit this link: https://tidyr.tidyverse.org/reference/pivot_longer.html
+
+::::
+
+<br>
+<br>
+
+The following figure was created using data compiled by https://thesportsdaily.com/, and originally retrieved from Sportico and Statista:
+
+
+```{r, fig.align ='center', fig.height= 5, fig.width= 8}
+library(tidyverse)
+
+valuation_table <- data.frame(`F1 Team` = c('Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Aston Martin',
+                                            'Alpine', 'Alpha Tauri', 'Alfa Romeo', 'Williams', 'Haas'),
+                              `2018 Valuation` = c(1350, 1015, 640, 620, NA, 430, 200, 105, 400, 115),
+                              `2023 Valuation` = c(3130, 2700, 2420, 1560, 1140, 1080, 905, 815, 795, 710)) %>%
+  pivot_longer(- F1.Team, names_to = 'year', values_to = 'valuation') %>%
+  mutate(year = str_remove(year, 'X'),
+         year = str_remove(year, '.Valuation'))
+
+valuation_table %>%
+  ggplot(aes(y = fct_reorder(F1.Team, valuation), x = valuation, fill = year)) +
+  geom_histogram(stat = 'identity', position = 'dodge', alpha = 0.5) +
+  labs(title = 'Increase in Formula 1 Team Valuations',
+       subtitle = '2018 vs 2023',
+       y = 'F1 Team',
+       x = 'Valuation (Millions)',
+       caption = 'data sources:  \n https://thesportsdaily.com/news/f1-teams-valuations-increase-by-an-average-of-280-over-last-five-years/ \n https://www.sportico.com/leagues/motorsports/2023/richest-formula-1-teams-most-valuable-1234727541/ \n https://www.sportico.com/leagues/motorsports/2023/richest-formula-1-teams-most-valuable-1234727541/') +
+  theme_bw() +
+  scale_x_continuous(labels = scales::dollar_format()) +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0, size = 9))
+```
+
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to create a bar chart in R**
+:::
+
+To create the figure above, I used the bar geometry, `geom_bar()`, in **ggplot2**. I often use bar charts to plot counts or sums by some grouping variable. 
+
+I used two arguments within `geom_bar()`: `stat = 'identity'` ensures that **ggplot** uses the dollar sum as listed in the column, while `position = 'dodge'` preserves the position along the x-axis. 
+
+For more information on *dodging* in **ggplot2**, visit this link: https://ggplot2.tidyverse.org/reference/position_dodge.html
+
+::::
+
+<br>
+<br>
+
+Each Formula 1 team has two cars driven by two drivers. Drivers and teams are awarded points based on their finishing position in each Grand Prix. The final tally of points scored will decide two competitions that are taking place during a Formula 1 season: (1) a driver's championship, and (2) a constructors championship (team championship). Currently, Formula 1 has 10 teams, 20 drivers, and awards the following points for each finishing position. Additionally, 1 point is awarded to the driver with the fastest lap during a Grand Prix. 
+
+```{r, echo = T}
+library(tidyverse)
+library(gt)
+library(knitr)
+
+points_dataframe <- data.frame(Placing = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11 - 20'),
+           Pts = c(25, 18, 15, 12, 10, 8, 6, 4, 2, 1, 0))
+
+gt(points_dataframe)  %>% 
+  cols_align(align = c("center"), columns = 2) %>% 
+  tab_options(column_labels.font.weight = "bold")
+```
+
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to create a table in R**
+:::
+
+
+To create the table above, I simply pipe (i.e. `%>%`) a manually-created dataframe to the `gt()` function (i.e. `df %>% gt()`). The `gt()` function is found in the **gt** package. The **gt** package is the best way (in my opinion!) to create beautiful tables using the R programming language. **gt** functions work great with dataframes and tibbles, and can easily become an extension of yur typical tidy workflow. This example above is an absolute bare-bones examples of a **gt** table. 
+
+Another way to create this type of table would be to use the `kable()` function from the **knitr** package. The `kable()` function is a very simple table generator in R. 
+
+For more information about the **gt** package, visit this link:
+
+https://gt.rstudio.com/
+
+This guide provides lots of information about styling aesthetics of a table, including table headers and footers, column labels, and much, much more! 
+
+
+::::
+
+
+## Data
+
+In this book, I will limit the data to include only years 2014 through 2023. Why start in 2014? 2014 marks the beginning of the **turbo-hybrid** era in Formula 1. In 2014, F1 made perhaps the most significant rule change in its' history by replacing naturally aspirated V8 engines with 1.6 liter turbocharged V6 engines. In fact, because F1 engines now include an electric component, they are actually referred to as *power units*. This new set of regulations seemed like an ideal place to start my analyses. At times in this book, I will note changes occurring after the 2021 season. I do this because 2022 marked another year of significant change in the regulations, this time aerodynamically. After a forty-year ban, **ground effect** returned to Formula 1. The goal for a Formula 1 engineering and design team is to optimize ground effect so that the bottom of the car generates low pressure, which will *suck* the car to the track. This new set of regulations in 2022 disrupted Mercedes' period of dominance from 2014 to 2021. 
+
+
+## A Formula 1 Weekend
+
+A Formula One Grand Prix is actually not just a single race, but rather a sporting event spanning three days, typically from Friday to Sunday. Beginning on Friday, there is typically two practices (**FP1** and **FP2**), followed by a third practice (**FP3**) and a qualifying session on Saturday. Practice sessions provide teams an opportunity to *practice* on the circuit, and experiment with the setup of the car. Qualifying determines the grid for the race on Sunday. Currently, there are three heats in qualifying. All cars compete in the first heat (**Q1**), and the top 15 fastest times advance to the 2nd heat (**Q2**). From there, the top 10 fastest times during heat 2 advance to *Q3* (heat 3). Qualifying times determine the starting grid for the Grand Prix. The fastest qualifying times start the race at the front of the *grid*, and the slowest start at the back. If a driver incurs a penalty during qualifying, the starting grid will be adjusted accordingly. The race takes place on Sunday, and the top three placed drivers take their places upon a *podium*. A *podium* is a particularly noteworthy career achievement. 
+
+
+```{r, include = F}
+library(tidyverse)
+library(drs)
+library(broom)
+library(ggtext)
+library(ciTools)
+library(merTools)
+library(ggrepel)
+library(emmeans)
+library(gghighlight)
+library(ggtext)
+
+
+# Practice Results
+practice_times <- read_csv("practice_times.csv")
+
+# Create title color coder function
+title_color_coder <- function(leading_regular_text, label_1, color_1, middle_regular_text, label_2, color_2, trailing_regular_text){
+
+  title_text <- paste0(leading_regular_text, "<span style='color:", color_1,";'>",label_1,"</span>", middle_regular_text, "<span style='color:", color_2,";'>", label_2, "</span>", trailing_regular_text)
+
+  return(title_text)
+
+}
+
+
+```
+
+
+## Practice Sessions
+
+Currently, there are three free practice sessions (often abbreviated to FP1, FP2, and FP3) that are held before the race. The first (FP1) is held on Friday morning, the second (FP2) on Friday afternoon, and the third session (FP3) is held on Saturday morning. Since 2021, practice sessions last for one hour, but previously Friday sessions were 90 minutes long.
+
+Typically, teams will use each practice session for a different purpose. For instance, FP1 is often used to test the car and ensure it is working as expected, while also collecting information on the track and car setup. FP2 is often used for additional reconnaissance and testing of the car's performance on *long runs*. FP3 is most commonly used to understand the car's speed over lap (i.e. qualifying pace). 
+
+When I first became interested in Formula 1, I had tons of questions about the cars, racing, and structure of the Grand Prix weekend. While there are countless resources available to learn about Formula (shout out to r/formula1), I particularly enjoy learning by exploring data. Luckily, you can find practice, qualifying, and Grand Prix data on https://formula1.com/. 
+
+In this chapter, we will be focusing on practice data. To make that data  a little more accessible, feel free to use the `practice_session_scraper()` function from my **drs** package. To scrape FP1 data for 2014 through 2023, use the following code:
+
+```{r, warning = F, message = F, eval = F}
+# Scrape FP1 data
+fp1_2023 <- practice_session_scraper(2023, 1)
+fp1_2022 <- practice_session_scraper(2022, 1)
+fp1_2021 <- practice_session_scraper(2021, 1)
+fp1_2020 <- practice_session_scraper(2020, 1)
+fp1_2019 <- practice_session_scraper(2019, 1)
+fp1_2018 <- practice_session_scraper(2018, 1)
+fp1_2017 <- practice_session_scraper(2017, 1)
+fp1_2016 <- practice_session_scraper(2016, 1)
+fp1_2015 <- practice_session_scraper(2015, 1)
+fp1_2014 <- practice_session_scraper(2014, 1)
+```
+
+
+To scrape FP2 data for the same time period, use this code:
+
+```{r, warning = F, message = F, eval = F}
+# Scrape FP2 data
+fp2_2023 <- practice_session_scraper(2023, 2)
+fp2_2022 <- practice_session_scraper(2022, 2)
+fp2_2021 <- practice_session_scraper(2021, 2)
+fp2_2020 <- practice_session_scraper(2020, 2)
+fp2_2019 <- practice_session_scraper(2019, 2)
+fp2_2018 <- practice_session_scraper(2018, 2)
+fp2_2017 <- practice_session_scraper(2017, 2)
+fp2_2016 <- practice_session_scraper(2016, 2)
+fp2_2015 <- practice_session_scraper(2015, 2)
+fp2_2014 <- practice_session_scraper(2014, 2)
+```
+
+
+And finally, to scrape FP3 data, use this:
+
+```{r, warning = F, message = F, eval = F}
+# Scrape FP3 data
+fp3_2023 <- practice_session_scraper(2023, 3)
+fp3_2022 <- practice_session_scraper(2022, 3)
+fp3_2021 <- practice_session_scraper(2021, 3)
+fp3_2020 <- practice_session_scraper(2020, 3)
+fp3_2019 <- practice_session_scraper(2019, 3)
+fp3_2018 <- practice_session_scraper(2018, 3)
+fp3_2017 <- practice_session_scraper(2017, 3)
+fp3_2016 <- practice_session_scraper(2016, 3)
+fp3_2015 <- practice_session_scraper(2015, 3)
+fp3_2014 <- practice_session_scraper(2014, 3)
+```
+
+
+Now that the data is scraped from www.formula1.com, I need to combine the dataframes together into one dataframe. I will use the `rbind()` function to row-bind data for each practice session. 
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to bind data in R**
+:::
+
+The `cbind()` and `rbind()` functions combine by columns or rows, respectively. 
+
+For more information on these two functions, visit this link: https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/cbind
+
+::::
+
+<br>
+<br>
+
+
+```{r, warning = F, message = F, eval = F}
+#Combine all practice data
+practice_times <- rbind(fp3_2023,
+                        fp3_2022,
+                            fp3_2021,
+                            fp3_2020,
+                            fp3_2019,
+                            fp3_2018,
+                            fp3_2017,
+                            fp3_2016,
+                            fp3_2015,
+                            fp3_2014) %>%
+  left_join(rbind(fp2_2023,
+                  fp2_2022,
+                            fp2_2021,
+                            fp2_2020,
+                            fp2_2019,
+                            fp2_2018,
+                            fp2_2017,
+                            fp2_2016,
+                            fp2_2015,
+                            fp2_2014) %>%
+              dplyr::select('Driver', 'Race', 'Year', 'Time', 'Time_secs'), by = c('Driver', 'Race', 'Year'), suffix = c("_3", "_2")) %>%
+  left_join(rbind(fp1_2023,
+                  fp1_2022,
+                            fp1_2021,
+                            fp1_2020,
+                            fp1_2019,
+                            fp1_2018,
+                            fp1_2017,
+                            fp1_2016,
+                            fp1_2015,
+                            fp1_2014) %>%
+              dplyr::select('Driver', 'Race', 'Year', 'Time', 'Time_secs'), by = c('Driver', 'Race', 'Year')) %>%
+  rename(Time_1 = Time, Time_secs_1 = Time_secs) %>% 
+  relocate(Time_3, .after = Year)
+```
+
+
+<br>
+<br>
+
+
+While learning about the sport, one of my early questions was: *Do cars get faster with each practice session?* 
+
+To begin trying to answer this question, I will make use of the practice session data. For this example, I will focus on 2023 practice data, and use `left_join()` from the **dplyr** package to merge all practice sessions together for the 2023 season.
+
+
+```{r, warning = F, message = F}
+
+# Pull 2023 data
+# Scrape FP1 data
+fp1_2023 <- practice_session_scraper(2023, 1)
+# Scrape FP2 data
+fp2_2023 <- practice_session_scraper(2023, 2)
+# Scrape FP2 data
+fp3_2023 <- practice_session_scraper(2023, 3)
+
+# Merge Practices times for 2022
+practice_times_2023 <- fp3_2023 %>%
+  left_join(fp2_2023 %>%
+              dplyr::select('Driver', 'Race', 'Year', 'Time', 'Time_secs'), by = c('Driver', 'Race', 'Year'), suffix = c("_3", "_2")) %>%
+  left_join(fp1_2023 %>%
+              dplyr::select('Driver', 'Race', 'Year', 'Time', 'Time_secs'), by = c('Driver', 'Race', 'Year')) %>%
+  rename(Time_1 = Time, Time_secs_1 = Time_secs) %>% 
+  relocate(Time_3, .after = Year)
+```
+
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to join data in R**
+:::
+
+Joining data is pretty simple using functions from the **dplyr** package. In dplyr, you will be mutating joins, which adds columns from y to x, matching observations based on the keys. There are four mutating joins: 
+
+* `inner_join()`
+* `left_join()`
+* `right_join()`
+* `full_join()`
+
+
+For more information on mutating joins in **dplyr**, visit this link: https://dplyr.tidyverse.org/reference/mutate-joins.html
+
+::::
+
+<br>
+<br>
+
+
+Here's another tip on reordering columns: 
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to relocate a column of a dataframe in R**
+:::
+
+Notice that in the final line of the above code, I used the `relocate()` function to reorder a column. This is not necessary, but can help keep your dataframe more organized. 
+
+As an example, you could use the following code to move column A after column C in a dataframe:
+
+`df %>% relocate(a, .after = c)`
+
+For more information on the `relocate()` function in **dplyr**, visit this link: https://dplyr.tidyverse.org/reference/relocate.html
+
+::::
+
+
+<br>
+<br>
+
+
+
+I used the following code to plot the average times by practice session in 2023. 
+
+```{r, warning = F, message = F, fig.align ='center'}
+practice_times_2023 %>%
+  dplyr::select(Time_secs_3, Time_secs_2, Time_secs_1) %>%
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_')) %>%
+  ggplot(aes(practice_session, time)) +
+  stat_summary(fun.y = mean, 
+               geom = "point", pch = 21, col = 'black', fill =  'red', alpha = 0.5, size = 3) + 
+  theme_bw() +
+  labs(y = 'Best Lap Time (secs)',
+       x = 'Practice Session',
+       title = 'Average Best Lap Time by Practice Session',
+       subtitle = 'All Grands Prix: 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+
+<br>
+<br>
+
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to create a categorical scatter plot with a computed mean in R**
+:::
+
+If there are many observations per group, you can use the `stat_summary()` function to calculate a grouped mean of the variable plotted along the y-axis. Specifically, the argument `fun.y = mean` specifies that you want to calculate the mean of the y-axis variable. If you wish to *only* plot the mean, include the `geom = "point"` argument. 
+
+
+For more information on `stat_summary()` in **ggplot2**, visit this link: https://ggplot2.tidyverse.org/reference/stat_summary.html
+
+::::
+
+<br>
+<br>
+
+
+When pooling all teams, drivers, and circuits together, it looks like the average time during P1 is slower than both P2 and P3. P3's average time is slightly slower than P2. But, these times will obviously vary considerably by year, Grand Prix, team, and driver. How much variability surrounds the average times in the figure above? I'll re-plot that data but also include a standard deviation bar that describes the mean ± 1 standard deviation (SD). 
+
+
+```{r, warning = F, message = F, fig.align ='center'}
+practice_times_2023 %>%
+  dplyr::select(Time_secs_3, Time_secs_2, Time_secs_1) %>%
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_')) %>%
+  ggplot(aes(practice_session, time)) +
+  stat_summary(fun.y = mean,
+               fun.ymin = function(x) mean(x) - sd(x), 
+               fun.ymax = function(x) mean(x) + sd(x), 
+               geom = "pointrange",
+               pch = 21, col = 'black', fill =  'red', alpha = 0.5, size = 1) +
+  theme_bw() +
+  labs(y = 'Best Lap Time (secs)',
+       x = 'Practice Session',
+       title = 'Average Best Lap Time \u00b1 SD by Practice Session',
+       subtitle = 'All Grands Prix: 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+
+<br>
+<br>
+
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to create a categorical scatter plot with a computed mean ± standard deviation in R**
+:::
+
+Again, you can use the `stat_summary()` function to calculate a grouped mean ± standard deviation of the variable plotted along the y-axis. To plot a computed *point-interval* or *point-range*, specify `geom = "pointrange"`. Additionally, you'll need to include arguments for the calculated minimum and maximum of that range. In the example above, I plot the mean ± 1 standard deviation using the arguments `fun.ymin = function(x) mean(x) - sd(x)` and `fun.ymax = function(x) mean(x) + sd(x)`. 
+
+
+For more information on `stat_summary()` in **ggplot2**, visit this link: https://ggplot2.tidyverse.org/reference/stat_summary.html
+
+::::
+
+
+<br>
+<br>
+
+
+
+Despite the differences in average times between practice sessions, the variability of times *within* each practice sessions far exceeds the differences *between* the sessions. This seems obvious. Circuits are very different, not to mention all of the other sources of variability including yearly, team, and differences by driver. Approximately 68% of the data will fall within 1 standard deviation of the mean. So, the entire distribution of practice times extends beyond the intervals in the figure above. 
+
+If we'd like to know how the entire distributions of times compare, we can include the individual times beneath the mean ± SD. 
+
+
+```{r, warning = F, message = F, fig.align ='center'}
+practice_times_2023 %>%
+  dplyr::select(Time_secs_3, Time_secs_2, Time_secs_1) %>%
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_')) %>%
+  ggplot(aes(practice_session, time)) +
+  geom_point(position = position_jitter(w= 0.3, h = 0), alpha = 0.25, col = 'grey') +
+  theme_bw() +
+  stat_summary(fun.y = mean,
+               fun.ymin = function(x) mean(x) - sd(x), 
+               fun.ymax = function(x) mean(x) + sd(x), 
+               geom = "pointrange", 
+               col = 'red', linewidth = 2, size = 1, alpha = 0.5) +
+  labs(y = 'Best Lap Time (secs)',
+       x = 'Practice Session',
+       title = 'Average Best Lap Time \u00b1 SD by Practice Session',
+       subtitle = 'includes each time for every Grand Prix: 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to create a strip plot in R**
+:::
+
+In a 2015 paper, Tracey Weissgerber proposed packing as much information as possible into a figure. One of her recommendations for plotting a continuous variable across groups is the *strip plot*. 
+
+Here is a link to Tracy's fantastic paper: https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.1002128
+
+To create a strip plot in **ggplot**, I simply use `geom_point()` and include the `position = position_jitter()` argument. 
+
+I'll mention more about `geom_point()` shortly, but visit this link for more information on point geometries in **ggplot2**: https://ggplot2.tidyverse.org/reference/geom_point.html
+
+And, here's a link to background information on *jittering*: https://ggplot2.tidyverse.org/reference/position_jitter.html
+
+
+
+::::
+
+
+<br>
+<br>
+
+
+Much of this variability can actually be explained away. The largest source of variability among these times is caused by differences in circuits. For instance, lap times at the United States Grand Prix (Circuit of the Americas) are much longer than those at the Austrian Grand Prix. In the figure below, I plot the average P1 lap time for each Grand Prix. Clearly, lap times vary *considerably* by circuit!
+
+
+
+
+
+```{r, fig.align ='center'}
+practice_times_2023 %>%
+  group_by(Race) %>%
+  summarize(mean = mean(Time_secs_1, na.rm = T)) %>%
+  ggplot(aes(mean, y = fct_reorder(Race, mean))) +
+    geom_point() +
+    theme_bw() +
+  labs(x = 'Average Best Lap Time (secs)',
+       y = 'Grand Prix',
+       title = 'Average Best Lap Time',
+       subtitle = 'Practice 1 - All Grands Prix: 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to create a categorical scatter plot in R**
+:::
+
+I used the simple point geometry (`geom_point()`) in **ggplot2** to create the plot above. `geom_point()` is most commonly used to create scatterplots that display the relationship between two continuous variables. However, you can also use them to plot a continuous variables across groups. 
+
+For more information on point geometries in **ggplot2**, visit this link: https://ggplot2.tidyverse.org/reference/geom_point.html
+
+::::
+
+
+<br>
+<br>
+
+
+We can *pretty* this figure up a bit by adding alternating row shading. **ggplot** does not have a way to do this directly, so I will use the `geom_hline()` function to do this. 
+
+
+```{r, fig.align ='center'}
+practice_times_2023 %>%
+  group_by(Race) %>%
+  summarize(mean = mean(Time_secs_1, na.rm = T)) %>%
+  ggplot(aes(mean, y = fct_reorder(Race, mean))) +
+  geom_hline(yintercept = c('belgium', 'azerbaijan', 'united-states', 'singapore', 'miami', 'great-britain', 'abu-dhabi', 'canada', 'australia', 'monaco', 'brazil'), col = 'grey', size = 5, alpha = 0.2) + 
+  geom_point() +
+    theme_bw() +
+  labs(x = 'Average Best Lap Time (secs)',
+       y = 'Grand Prix',
+       title = 'Average Best Lap Time',
+       subtitle = 'Practice 1 - All Grands Prix: 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+
+
+Building on this idea, let's explore how variability for a *single* Grand Prix (**Bahrain**) compare to the variability across all Grands Prix. Below, I'll calculate the standard deviation for Bahrian only and then all Grands Prix pooled together. Notice that the standard deviation for the Bahrain Grand Prix is about an order of magnitude smaller. 
+
+
+```{r, warning = F, message = F}
+
+# All Grands Prix
+practice_times_2023 %>%
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_')) %>%
+  group_by(practice_session) %>% 
+  summarize(sd = round(sd(time, na.rm = T), 2)) %>%
+  gt() %>%
+  tab_options(column_labels.font.weight = "bold") %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_body(columns = c(practice_session, sd))) %>%
+  cols_align(align = "center", columns = c(practice_session, sd)) %>% 
+  tab_header(
+    title = md("**data from all Grands Prix**"),
+    subtitle = md("2023")
+  )
+
+# Bahrain Only
+practice_times_2023 %>%
+  filter(Race %in% c('bahrain')) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_')) %>%
+  group_by(practice_session) %>% 
+  summarize(sd = round(sd(time, na.rm = T), 2)) %>%
+  gt() %>% 
+  tab_options(column_labels.font.weight = "bold") %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_body(columns = c(practice_session, sd))) %>%
+  cols_align(align = "center", columns = c(practice_session, sd)) %>% 
+  tab_header(
+    title = md("**data from the Bahrain Grand Prix only**"),
+    subtitle = md("2023")
+  )
+```
+
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to add a header to a table in R**
+:::
+
+It is very easy to add a header to the tables above. To add a title and/or subtitle, simply pass the `title` and `subtitle` arguments to the `tab_header()` function. The table header is positioned just above the column labels in the **gt** table. 
+
+To **bold** or *italicize* the title or subtitle in the header, **gt** actually allows the flexibility to use Markdown or HTML formatting. To use Markdown or HTML formatting, wrap your `title` and/or `subtitle` text in `md()` or `html()` functions, respectively.
+
+For more information, visit this link: https://gt.rstudio.com/reference/tab_header.html
+
+::::
+
+<br>
+<br>
+
+
+We should keep this in mind as we continue exploring the data. Below, I'll plot the average practice times for the Bahrain Grand Prix, along with all of the underlying times (grey points). 
+
+
+```{r, warning = F, message = F, fig.align ='center'}
+practice_times %>%
+  filter(Race %in% c('bahrain')) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_')) %>%
+  ggplot(aes(practice_session, time)) +
+  geom_point(position = position_jitter(w= 0.3, h = 0), alpha = 0.5, col = 'grey') +
+  theme_bw() +
+  stat_summary(fun.y = mean,
+               fun.ymin = function(x) mean(x) - sd(x), 
+               fun.ymax = function(x) mean(x) + sd(x), 
+               geom = "pointrange", 
+               col = 'red', linewidth = 2, size = 1, alpha = 0.5) +
+  labs(y = 'Best Lap Time (secs)',
+       x = 'Practice Session',
+       title = 'Average Best Lap Time \u00b1 SD by Practice Session',
+       subtitle = 'includes each time for the Bahrain Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+Judging by this figure, P1 times appear to be slower than times during P2 and P3 in Bahrain. And while the average for P2 is slightly faster than P3, the *fastest* single lap times were set during P3. Interesting. 
+Let's dig depper into the Bahrain data! If we plot practice times by year, but group the times by practice session, we can see that times steadily improve each year until 2021, at which point they begin to get a bit slower. 
+
+```{r, warning = F, message = F, fig.align ='center'}
+practice_times %>%
+  filter(Race %in% c('bahrain')) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+  ggplot(aes(Year, time, 
+               group = practice_session, col = practice_session)) +
+  theme_bw() +
+  stat_summary(fun.y = mean,
+               fun.ymin = function(x) mean(x) - sd(x), 
+               fun.ymax = function(x) mean(x) + sd(x), 
+               geom = "pointrange", 
+               linewidth = 1, size = 0.5, alpha = 0.5,
+               position = position_dodge(w = 0.25)) +
+  stat_summary(fun.y = mean,
+               geom = "line", 
+               linewidth = 1, size = 0.5, alpha = 0.5,
+               position = position_dodge(w = 0.25)) +
+  labs(x = 'Year',
+       y = 'Best Lap Time (secs)',
+       col = 'Practice Session',
+       title = 'Average Best Lap Time \u00b1 SD by Year and Practice Session',
+       subtitle = 'Bahrain Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+
+Pretty cool!
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to create a line plot with a computed mean ± standard deviation in R**
+:::
+
+Like the previous examples with points and point-ranges, you can also use the `stat_summary()` function to create a line plot using grouped means ± standard deviation. Simply pass `geom = "line"` as an argument to the `stat_summary()` function. In the figure above, I wanted to plot grouped lines, so I also passed `group = practice_session` and `col = practice_session` as arguments to the original `ggplot()` call. 
+
+In addition to these summary lines, I also included the point-ranges using the same approach as previous figures (i.e. a separate `stat_summary()` call using the `geom = "pointrange"` argument.). 
+
+For more information on `stat_summary()` in **ggplot2**, visit this link: https://ggplot2.tidyverse.org/reference/stat_summary.html
+
+::::
+
+<br>
+<br>
+
+Let's expand a bit, and look at a few more circuits. Knowing that times vary by Grand Prix and year, let's take a deeper look at differences in times within a single year (2022) and for one continent (North America). Below, I'll plot the average practice times across North American Grands Prix for 2022 only.
+
+```{r, warning = F, message = F, fig.align ='center'}
+practice_times %>%
+  filter(Year == 2022) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+  filter(Race %in% c('canada', 'miami', 'united-states', 'mexico', 'brazil')) %>% 
+  ggplot(aes(practice_session, time, 
+               group = Race, col = Race)) +
+  theme_bw() +
+  stat_summary(fun.y = mean,
+               fun.ymin = function(x) mean(x) - sd(x), 
+               fun.ymax = function(x) mean(x) + sd(x), 
+               geom = "pointrange", 
+               linewidth = 1, size = 1, alpha = 0.5) +
+  stat_summary(fun.y = mean,
+               geom = "line", 
+               linewidth = 1, size = 1, alpha = 0.5) +
+  labs(y = 'Best Lap Time (secs)',
+       x = 'Practice Session',
+       col = 'Grand Prix',
+       title = 'Average Best Lap Time \u00b1 SD by Practice Session and Grand Prix',
+       subtitle = 'North America: 2022') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_color_viridis_d(option = 'plasma')
+```
+
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to use colorblind-friendly palettes in R**
+:::
+
+As someone with color blindness, I find the use of colorblind-friendly palettes very helpful! I often rely on the `viridis ` color scales for **ggplot**. The `viridis` scales provides various color mappings that are designed to be perceived by viewers with common forms of color blindness. 
+
+For a continuous color mapping, use `scale_color_viridis_c()`.
+
+For a discrete color mapping, use `scale_color_viridis_d()`.
+
+For more information about `viridis`, visit this link: https://ggplot2.tidyverse.org/reference/scale_viridis.html
+
+For more context about perceptually uniform color scales, see this link:
+https://bids.github.io/colormap/.
+
+
+
+::::
+
+<br>
+<br>
+
+
+Interestingly, there doesn't seem to be a definitive pattern in practice times across these four North American races in 2022. Of note, some of these times are impacted by rain (i.e. Canada). Let's compare this to four European races, where there is a fiarly clear decrease in times from P1 to P3. 
+
+
+
+```{r, warning = F, message = F, fig.align ='center'}
+practice_times %>%
+  filter(Year == 2022) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+  filter(Race %in% c('france', 'monza', 'great-britain', 'netherlands')) %>% 
+  ggplot(aes(practice_session, time, 
+               group = Race, col = Race)) +
+  theme_bw() +
+  stat_summary(fun.y = mean,
+               fun.ymin = function(x) mean(x) - sd(x), 
+               fun.ymax = function(x) mean(x) + sd(x), 
+               geom = "pointrange", 
+               linewidth = 1, size = 1, alpha = 0.5) +
+  stat_summary(fun.y = mean,
+               geom = "line", 
+               linewidth = 1, size = 1, alpha = 0.5) +
+  labs(y = 'Best Lap Time (secs)',
+       x = 'Practice Session',
+       col = 'Grand Prix',
+       title = 'Average Best Lap Time \u00b1 SD by Practice Session and Grand Prix',
+       subtitle = 'European Grands Prix: 2022') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_color_viridis_d(option = 'plasma')
+```
+
+
+In the next section, we will begin exploring practice data by *driver*. 
+
+
+## Practice Times by Driver
+
+Perhaps the most fun way to visualize data is to plot the times by driver. In the series of figures below, I plot *standardized* practice times for each driver. Each driver's times are subtracted from the average session time for a given Grand Prix. For example, Lewis Hamilton's best FP1 time at the 2014 Australian Grand Prix will be subtracted from the average best FP1 time for the grid. Hamilton was very quick in 2014, so naturally, his standardized times are much faster than the average over the entire year. 
+
+We will first focus on the 2014 season, which Mercedes dominated. The two Mercedes drivers, Lewis Hamilton and Nico Rosberg, are clearly much faster than all other drivers during P2 and P3. During this 2014 season, Australia happened to be the circuit where Mercedes had the largest standardized gap in P3. 
+
+
+
+```{r, fig.align ='center', fig.height = 5, fig.width = 8}
+practice_times %>%
+  filter(Year == 2014) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+   group_by(Race, practice_session) %>%
+   mutate(track_mean = mean(time, na.rm = T),
+          Time_std_track = time - track_mean) %>% 
+   ungroup() %>% 
+   group_by(Driver) %>% 
+   mutate(driver_n = n(),
+          mean = mean(Time_std_track, na.rm = T)) %>%
+   ungroup() %>%
+   dplyr::filter(driver_n > 15) %>% 
+  mutate(practice_session = paste0('free practice ', practice_session)) %>%  
+   ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+   geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+   theme_bw() +
+   labs(x = 'Standardized Practice Time (secs)',
+        y = 'Driver',
+        title = 'Standardized Practice Time',
+        subtitle = '2014',
+        caption = '*Times are subtracted from the average time for each Grand Prix') +
+   geom_vline(xintercept = 0, col = 'red') +
+   theme(plot.title = element_text(hjust = 0.5),
+         plot.subtitle = element_text(hjust = 0.5),
+         plot.caption = element_text(hjust = 0)) +
+  facet_wrap(~ practice_session) +
+  xlim(-5, 5) +
+  geom_hline(yintercept = seq(22, 1, -2), col = 'grey', size = 5, alpha =  0.2)
+```
+
+<br>
+<br>
+
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**Jittering data points in R**
+
+:::
+
+I'll often use *jittering* to slightly separate data points that would otherwise be plotted on top of each other. Interestingly (and counterintuitively!), using a *jitter* argument in **ggplot** to add small amounts of random noise to a plot can actually make the plot easier to interpret. 
+
+To add *jittering* to a plot, simply pass `position = position_jitter()` as an argument inside `geom_point()`. In the example above, I specify that I wish to add a small degree of *jittering* vertically and **no** *jittering* horizontally using `position = position_jitter(w = 0, h = 0.1)`. 
+
+https://ggplot2.tidyverse.org/reference/position_jitter.html
+
+::::
+
+<br>
+<br>
+
+
+Hamilton and Rosberg again dominated practice sessions 2 and 3 during the 2015 season. During 2015, Malaysia happened to be a particularly strong circuit for Mercedes. 
+
+```{r, fig.align ='center', fig.height = 5, fig.width = 8}
+practice_times %>%
+  filter(Year == 2015) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+   group_by(Race, practice_session) %>%
+   mutate(track_mean = mean(time, na.rm = T),
+          Time_std_track = time - track_mean) %>% 
+   ungroup() %>% 
+   group_by(Driver) %>% 
+   mutate(driver_n = n(),
+          mean = mean(Time_std_track, na.rm = T)) %>%
+   ungroup() %>%
+   dplyr::filter(driver_n > 15) %>% 
+  mutate(practice_session = paste0('free practice ', practice_session)) %>%  
+   ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+   geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+   theme_bw() +
+   labs(x = 'Standardized Practice Time (secs)',
+        y = 'Driver',
+        title = 'Standardized Practice Time',
+        subtitle = '2015',
+        caption = '*Times are subtracted from the average time for each Grand Prix') +
+   geom_vline(xintercept = 0, col = 'red') +
+   theme(plot.title = element_text(hjust = 0.5),
+         plot.subtitle = element_text(hjust = 0.5),
+         plot.caption = element_text(hjust = 0)) +
+  facet_wrap(~ practice_session) +
+  xlim(-5, 5) +
+  geom_hline(yintercept = seq(22, 1, -2), col = 'grey', size = 5, alpha =  0.2)
+```
+
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**Adding a reference line in R**
+
+:::
+
+In the plot above, the solid red vertical line serves a reference line for a standardized time of 0 (i.e. the average time at a Grand Prix). Sometimes, it's helpful to add a reference line to a figure. Within **ggplot2**, there are three common geometries that are used to add references lines to a plot:
+
+* `geom_hline()` adds a horizontal reference line. Specify the `yintercept`.
+* `geom_vline()` adds a vertical reference line. Specify the `xintercept`.
+* `geom_abline()` adds a diagonal reference line. Specify the `slope`.
+
+For more information see this link: https://ggplot2.tidyverse.org/reference/geom_abline.html
+
+::::
+
+
+<br>
+<br>
+
+
+The Mercedes domination of practice sessions continued through 2016. However, by then, Ferrari had started chipping away at the gap to Mercedes. 
+
+```{r, fig.align ='center', fig.height = 5, fig.width = 8}
+practice_times %>%
+  filter(Year == 2016) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+   group_by(Race, practice_session) %>%
+   mutate(track_mean = mean(time, na.rm = T),
+          Time_std_track = time - track_mean) %>% 
+   ungroup() %>% 
+   group_by(Driver) %>% 
+   mutate(driver_n = n(),
+          mean = mean(Time_std_track, na.rm = T)) %>%
+   ungroup() %>%
+   dplyr::filter(driver_n > 15) %>% 
+  mutate(practice_session = paste0('free practice ', practice_session)) %>%  
+   ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+   geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+   theme_bw() +
+   labs(x = 'Standardized Practice Time (secs)',
+        y = 'Driver',
+        title = 'Standardized Practice Time',
+        subtitle = '2016',
+        caption = '*Times are subtracted from the average time for each Grand Prix') +
+   geom_vline(xintercept = 0, col = 'red') +
+   theme(plot.title = element_text(hjust = 0.5),
+         plot.subtitle = element_text(hjust = 0.5),
+         plot.caption = element_text(hjust = 0)) +
+  facet_wrap(~ practice_session) +
+  xlim(-5, 5) +
+  geom_hline(yintercept = seq(23, 1, -2), col = 'grey', size = 5, alpha =  0.2)
+```
+
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**Faceting Plots**
+
+:::
+
+In the previous few figures, you will notice that the data is split into panes, or *facets*. 
+Faceting splits a larger graph into two or more smaller graphs that are organized within a grid. Each *facet* within the grid will display the same style of graph for a designated group of the dataset. 
+
+In the example above, I use the `facet_wrap()` function to split the graph into facets representing each practice session using the following function and argument: `facet_wrap(~ practice_session)`
+
+For more information on the `facet_wrap()` function, see this link: https://ggplot2.tidyverse.org/reference/facet_wrap.html
+
+::::
+
+<br>
+<br>
+
+
+By 2017, Ferrari had seemingly closed the gap to Mercedes. Sebastian Vettel led the driver's championship for the first 12 rounds of the season, and we can see that Vettel's practice times are comparable to those posted by Hamilton. In 2017, the Ferrari SF70H was thought to be initially a more consistent car in race trim, and Vettel's P2 times seem to support this claim. 
+
+
+```{r, fig.align ='center', fig.height = 5, fig.width = 8}
+practice_times %>%
+  filter(Year == 2017) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+   group_by(Race, practice_session) %>%
+   mutate(track_mean = mean(time, na.rm = T),
+          Time_std_track = time - track_mean) %>% 
+   ungroup() %>% 
+   group_by(Driver) %>% 
+   mutate(driver_n = n(),
+          mean = mean(Time_std_track, na.rm = T)) %>%
+   ungroup() %>%
+   dplyr::filter(driver_n > 15) %>% 
+  mutate(practice_session = paste0('free practice ', practice_session)) %>%  
+   ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+   geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+   theme_bw() +
+   labs(x = 'Standardized Practice Time (secs)',
+        y = 'Driver',
+        title = 'Standardized Practice Time',
+        subtitle = '2017',
+        caption = '*Times are subtracted from the average time for each Grand Prix') +
+   geom_vline(xintercept = 0, col = 'red') +
+   theme(plot.title = element_text(hjust = 0.5),
+         plot.subtitle = element_text(hjust = 0.5),
+         plot.caption = element_text(hjust = 0)) +
+  facet_wrap(~ practice_session) +
+  xlim(-5, 5) +
+  geom_hline(yintercept = seq(22, 1, -2), col = 'grey', size = 5, alpha =  0.2)
+```
+
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**Sorting an axis in ggplot**
+
+:::
+
+You may have noticed that the last few plots have a y-axis that is sorted by the values along the x-axis. **ggplot2** does not sort an axis in this manner by default. However, this can easily be accomplished using the `fct_reorder()` function. In the plots above, I sort the y-axis (Drivers) by their average standardized time in descending order. 
+
+For more information on the `fct_reorder()` function, see this link: https://forcats.tidyverse.org/reference/fct_reorder.html
+
+::::
+
+<br>
+<br>
+
+
+In 2018, Vettel's distribution of practice times were not quite as fast as Hamilton. Hamilton's times during P2 seemed to stand apart from the field. Interestingly, Max Verstappen's times during P2 were comparable to those posted by Mercedes' other driver, Valtteri Bottas. 
+
+
+```{r, fig.align ='center', fig.height = 5, fig.width = 8}
+practice_times %>%
+  filter(Year == 2018) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+   group_by(Race, practice_session) %>%
+   mutate(track_mean = mean(time, na.rm = T),
+          Time_std_track = time - track_mean) %>% 
+   ungroup() %>% 
+   group_by(Driver) %>% 
+   mutate(driver_n = n(),
+          mean = mean(Time_std_track, na.rm = T)) %>%
+   ungroup() %>%
+   dplyr::filter(driver_n > 15) %>% 
+  mutate(practice_session = paste0('free practice ', practice_session)) %>%   
+   ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+   geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+   theme_bw() +
+   labs(x = 'Standardized Practice Time (secs)',
+        y = 'Driver',
+        title = 'Standardized Practice Time',
+        subtitle = '2018',
+        caption = '*Times are subtracted from the average time for each Grand Prix') +
+   geom_vline(xintercept = 0, col = 'red') +
+   theme(plot.title = element_text(hjust = 0.5),
+         plot.subtitle = element_text(hjust = 0.5),
+         plot.caption = element_text(hjust = 0)) +
+  facet_wrap(~ practice_session) +
+  xlim(-5, 5) +
+  geom_hline(yintercept = seq(22, 1, -2), col = 'grey', size = 5, alpha =  0.2)
+```
+
+
+During the 2019 season, Ferrari scored six consecutive pole positions between the Belgian and Mexican Grands Prix. However, after the FIA issued a technical directive reminding competitors of the regulations regarding fuel sensors, Ferrari's performance faded and they failed to score a pole position or race win for the remainder of the season. In the plot below, we can see that Charles LeClerc's distribution is fairly wide, which is likely indicative of this shift in performance. 
+
+
+```{r, fig.align ='center', fig.height = 5, fig.width = 8}
+practice_times %>%
+  filter(Year == 2019) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+   group_by(Race, practice_session) %>%
+   mutate(track_mean = mean(time, na.rm = T),
+          Time_std_track = time - track_mean) %>% 
+   ungroup() %>% 
+   group_by(Driver) %>% 
+   mutate(driver_n = n(),
+          mean = mean(Time_std_track, na.rm = T)) %>%
+   ungroup() %>%
+   dplyr::filter(driver_n > 15) %>% 
+  mutate(practice_session = paste0('free practice ', practice_session)) %>%  
+   ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+   geom_point(alpha = 0.5, col = 'red') +
+  gghighlight(Driver == 'LEC', calculate_per_facet = T) + 
+   theme_bw() +
+   labs(x = 'Standardized Practice Time (secs)',
+        y = 'Driver',
+        title = 'Standardized Practice Time',
+        subtitle = '2019',
+        caption = '*Times are subtracted from the average time for each Grand Prix') +
+   geom_vline(xintercept = 0, col = 'red') +
+   theme(plot.title = element_text(hjust = 0.5),
+         plot.subtitle = element_text(hjust = 0.5),
+         plot.caption = element_text(hjust = 0)) +
+  facet_wrap(~ practice_session) +
+  xlim(-5, 5)  +
+  geom_hline(yintercept = seq(22, 1, -2), col = 'grey', size = 5, alpha =  0.1)
+```
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**Highlighting data in ggplot**
+
+:::
+
+In the plot above, I highlight Charles Leclerc's data using the `gghighlight()` function from the **gghighlight** package. This function is version easy to use! Because this plot also utilizes `facet_wrap()` and I wanted to highlight each facet individually, I set the `calculate_per_facet` argument to `TRUE`. 
+
+To highlight Charles Leclerc, I used the following line of code: `gghighlight(Abbr == 'LEC', calculate_per_facet = T)`. 
+
+For more information on the **gghighlight** package, visit this link: https://cran.r-project.org/web/packages/gghighlight/vignettes/gghighlight.html
+
+::::
+
+<br>
+<br>
+
+
+In 2020, Max Verstappen competed with the two Mercedes Drivers (Hamilton and Bottas) in P3 (qualifying simulations), but struggled in the longer runs of P2. As we can see in the plot below, Verstappen's P3 pace was the closest to Mercedes, and far quicker than his teammate Alex Albon. 
+
+```{r, fig.align ='center', fig.height = 5, fig.width = 8}
+practice_times %>%
+  filter(Year == 2020) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+   group_by(Race, practice_session) %>%
+   mutate(track_mean = mean(time, na.rm = T),
+          Time_std_track = time - track_mean) %>% 
+   ungroup() %>% 
+   group_by(Driver) %>% 
+   mutate(driver_n = n(),
+          mean = mean(Time_std_track, na.rm = T)) %>%
+   ungroup() %>%
+   dplyr::filter(driver_n > 15) %>% 
+  mutate(practice_session = paste0('free practice ', practice_session)) %>%  
+   ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+   geom_point(alpha = 0.5, col = 'navy') +
+  gghighlight(Driver == 'VER', calculate_per_facet = T) + 
+   theme_bw() +
+   labs(x = 'Standardized Practice Time (secs)',
+        y = 'Driver',
+        title = 'Standardized Practice Time',
+        subtitle = '2020',
+        caption = '*Times are subtracted from the average time for each Grand Prix') +
+   geom_vline(xintercept = 0, col = 'red') +
+   theme(plot.title = element_text(hjust = 0.5),
+         plot.subtitle = element_text(hjust = 0.5),
+         plot.caption = element_text(hjust = 0)) +
+  facet_wrap(~ practice_session) +
+  xlim(-5, 5) +
+  geom_hline(yintercept = seq(22, 1, -2), col = 'grey', size = 5, alpha =  0.1)
+```
+
+
+For the first time since 2014, Mercedes faced a legitimate challenge to their dominance in 2021. While Ferrari had their moments during the **turbo-hybrid** era, Red Bull and Max Verstappen competed with Mercedes during every session of the 2021 season. 
+
+
+
+```{r, fig.align ='center', fig.height = 5, fig.width = 8}
+practice_times %>%
+  filter(Year == 2021) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+   group_by(Race, practice_session) %>%
+   mutate(track_mean = mean(time, na.rm = T),
+          Time_std_track = time - track_mean) %>% 
+   ungroup() %>% 
+   group_by(Driver) %>% 
+   mutate(driver_n = n(),
+          mean = mean(Time_std_track, na.rm = T)) %>%
+   ungroup() %>%
+   dplyr::filter(driver_n > 15) %>% 
+  mutate(practice_session = paste0('free practice ', practice_session)) %>%  
+   ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)), col = Driver)) +
+   geom_point(alpha = 0.5) +
+  gghighlight(Driver %in% c('VER', 'HAM', 'BOT'), calculate_per_facet = T) + 
+   theme_bw() +
+   labs(x = 'Standardized Practice Time (secs)',
+        y = 'Driver',
+        title = 'Standardized Practice Time',
+        subtitle = '2021',
+        caption = '*Times are subtracted from the average time for each Grand Prix') +
+   geom_vline(xintercept = 0, col = 'red') +
+   theme(plot.title = element_text(hjust = 0.5),
+         plot.subtitle = element_text(hjust = 0.5),
+         plot.caption = element_text(hjust = 0)) +
+  facet_wrap(~ practice_session) +
+  xlim(-5, 5) +
+  scale_color_manual('', values = c('seagreen', 'seagreen', 'navy')) +
+  geom_hline(yintercept = seq(22, 1, -2), col = 'grey', size = 5, alpha =  0.1)
+```
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**Custom discrete color scales in ggplot**
+
+:::
+
+In the plot above, I created a custom color scale that corresponds to two teams: Mercedes and Red Bull. The `scale_color_manual()` function allows you to specify your own set of mappings from levels/groups in the data to color values.
+
+For more information on this, visit this link: https://ggplot2.tidyverse.org/reference/scale_manual.html 
+
+::::
+
+<br>
+<br>
+
+
+The plot below shows the head-to-head practice battles for Verstappen vs Hamilton in 2021. This figure seems to suggest that Hamilton had the edge in race pace (P2), while Verstappen had the advantage in qualifying simulations (P3). 
+
+
+```{r, fig.align = 'center', fig.height = 8, fig.width = 12}
+practice_times %>%
+  filter(Year == 2021) %>% 
+  mutate(round = match(Race, unique(Race))) %>%
+  ungroup() %>%
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+   group_by(Race, practice_session) %>%
+   mutate(track_mean = mean(time, na.rm = T),
+          Time_std_track = time - track_mean) %>% 
+   ungroup() %>% 
+   group_by(Driver) %>% 
+   mutate(driver_n = n(),
+          mean = mean(Time_std_track, na.rm = T)) %>%
+   ungroup() %>%
+   dplyr::filter(driver_n > 15) %>% 
+  mutate(practice_session = paste0('free practice ', practice_session)) %>% 
+  filter(Driver %in% c('VER', 'HAM')) %>%
+  ggplot(aes(x = fct_reorder(Race, round), y = Time_std_track,
+                group = Driver, col = Driver)) +
+  geom_point() +
+  geom_path() + 
+  theme_bw() +
+  facet_wrap(~ practice_session) + 
+  scale_color_manual('', values = c('seagreen', 'navy')) +
+   labs(y = 'Standardized Practice Time (secs)',
+        x = 'Grand Prix',
+        title = title_color_coder("", "Verstappen", 'navy', " vs ", "Hamilton", 'seagreen',"  in 2021 Practice Sessions"),
+        subtitle = 'Standardized Practice Time',
+        caption = '*Times are subtracted from the average time for each Grand Prix') +
+  geom_vline(xintercept = seq(22, 1, -2), col = 'grey', size = 5, alpha =  0.2) +
+  theme(strip.text.x = element_text(size = 12),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 12),
+        axis.title.x = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+         plot.subtitle = element_text(hjust = 0.5, size = 15),
+         plot.caption = element_text(hjust = 0, size = 12),
+        legend.text = element_text(size = 13),
+        plot.title = ggtext::element_markdown(hjust = 0.5, size = 20)) ## render the provided text as markdown/html
+ 
+```
+
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**Color-coding the title in ggplot**
+
+:::
+
+The **ggtext** package provides Markdown and HTML rendering for **ggplot2**. Creating color-coded titles in **ggplot** can get tedious if there are many different colors being used, so I created a simple function (`title_color_coder()`) to add color to titles or subtitles in a **ggplot**. 
+
+Be sure to add the following function to **ggplot** code: `theme(plot.title = ggtext::element_markdown())`
+
+For more information on the **ggtext** package, visit this link: https://cran.r-project.org/web/packages/ggtext/readme/README.html
+
+::::
+
+<br>
+<br>
+
+
+The 2022 Formula 1 season brought an overhaul of the technical regulations. The 2022 technical regulations reintroduced the use of *ground effect* for the first time since 1983. Additionally, teams now had to abide by a *financial cost cap*. These changes upset the dominance of Mercedes, and seemingly ushered in a new era of dominance by Red Bull. While Ferrari often had the fastest qualifying pace, Red Bull enjoyed a considerable advantage in race pace.
+
+
+```{r, fig.align ='center', fig.height = 5, fig.width = 8}
+practice_times %>%
+  filter(Year == 2022) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+   group_by(Race, practice_session) %>%
+   mutate(track_mean = mean(time, na.rm = T),
+          Time_std_track = time - track_mean) %>% 
+   ungroup() %>% 
+   group_by(Driver) %>% 
+   mutate(driver_n = n(),
+          mean = mean(Time_std_track, na.rm = T)) %>%
+   ungroup() %>%
+   dplyr::filter(driver_n > 15) %>% 
+  mutate(practice_session = paste0('free practice ', practice_session)) %>%  
+   ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)), col = Driver)) +
+   geom_point(alpha = 0.5) +
+  gghighlight(Driver %in% c('VER', 'LEC', 'SAI', 'PER'), calculate_per_facet = T) +
+   theme_bw() +
+   labs(x = 'Standardized Practice Time (secs)',
+        y = 'Driver',
+        title = 'Standardized Practice Time',
+        subtitle = '2022',
+        caption = '*Times are subtracted from the average time for each Grand Prix') +
+   geom_vline(xintercept = 0, col = 'red') +
+   theme(plot.title = element_text(hjust = 0.5),
+         plot.subtitle = element_text(hjust = 0.5),
+         plot.caption = element_text(hjust = 0)) +
+  facet_wrap(~ practice_session) +
+  xlim(-5, 5) +
+  scale_color_manual('', values = c('red', 'navy', 'red', 'navy'))  +
+  geom_hline(yintercept = seq(22, 1, -2), col = 'grey', size = 5, alpha =  0.1)
+```
+
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to rotate axis text in ggplot**
+
+:::
+
+At times, you may wish to rotate the text of labels along the x- or y-axis. To rotate the x-axis labels in the plot above, I simply added the following function to the **ggplot**: `theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))`
+
+
+
+::::
+
+<br>
+<br>
+
+
+The rich got richer and the fast got faster in 2023. Max Verstappen was even more dominant in his third title-winning season. Compared to the previous year, Max was relatively even quicker across all practice sessions during 2023. 
+
+
+```{r, fig.align ='center', fig.height = 5, fig.width = 8}
+practice_times %>%
+  filter(Year == 2023) %>% 
+  pivot_longer(c(Time_secs_3, Time_secs_2, Time_secs_1), names_to = 'practice_session', values_to = 'time') %>%
+  mutate(practice_session = str_remove(practice_session, 'Time_secs_'),
+         Year = factor(Year)) %>%
+   group_by(Race, practice_session) %>%
+   mutate(track_mean = mean(time, na.rm = T),
+          Time_std_track = time - track_mean) %>% 
+   ungroup() %>% 
+   group_by(Driver) %>% 
+   mutate(driver_n = n(),
+          mean = mean(Time_std_track, na.rm = T)) %>%
+   ungroup() %>%
+   dplyr::filter(driver_n > 15) %>% 
+  mutate(practice_session = paste0('free practice ', practice_session)) %>%  
+   ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)), col = Driver)) +
+   geom_point(alpha = 0.5) +
+  gghighlight(Driver %in% c('VER', 'LEC', 'SAI', 'PER'), calculate_per_facet = T) +
+   theme_bw() +
+   labs(x = 'Standardized Practice Time (secs)',
+        y = 'Driver',
+        title = 'Standardized Practice Time',
+        subtitle = '2023',
+        caption = '*Times are subtracted from the average time for each Grand Prix') +
+   geom_vline(xintercept = 0, col = 'red') +
+   theme(plot.title = element_text(hjust = 0.5),
+         plot.subtitle = element_text(hjust = 0.5),
+         plot.caption = element_text(hjust = 0)) +
+  facet_wrap(~ practice_session) +
+  xlim(-5, 5) +
+  scale_color_manual('', values = c('red', 'navy', 'red', 'navy'))  +
+  geom_hline(yintercept = seq(23, 1, -2), col = 'grey', size = 5, alpha =  0.1)
+```
+
+
+
+## Next Chapter
+
+In the next chapter, we will move onto qualifying!
+
+\newpage

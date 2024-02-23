@@ -1,0 +1,783 @@
+# Qualifying
+
+Qualifying is one of the most important components of a Formula 1 Grand Prix weekend. Qualifying position determines the position where that driver starts the Grand Prix. Qualifying is actually composed of three different sessions: Q1, Q2, and Q3. All drivers take part in Q1, but only the top 15 fastest times are allowed to continue on to Q2. The fastest 10 times in Q2 make it to Q3. Q1 lasts 18 minutes, while Q2 lasts 15 minutes, and Q3 lasts 12 minutes. If a driver violates a rule or regulation, the penalties are issued following qualifying. 
+
+
+```{r, include = F}
+library(tidyverse)
+library(broom)
+library(ggtext)
+library(ciTools)
+library(merTools)
+library(ggrepel)
+library(emmeans)
+library(gghighlight)
+library(ggtext)
+library(drs)
+
+# Qualifying Results
+qualifying_allyears <- read.csv("qualifying_allyears.csv")
+
+# Create title color coder function
+title_color_coder <- function(leading_regular_text, label_1, color_1, middle_regular_text, label_2, color_2, trailing_regular_text){
+
+  title_text <- paste0(leading_regular_text, "<span style='color:", color_1,";'>",label_1,"</span>", middle_regular_text, "<span style='color:", color_2,";'>", label_2, "</span>", trailing_regular_text)
+
+  return(title_text)
+
+}
+
+
+```
+
+
+Qualifying data is readily available online. To scrape qualifying data drectly from www.formula1.com, you can use the `qualifying_scraper()` function from the **drs** package. 
+
+
+
+```{r, warning = F, message = F, eval = F}
+library(tidyverse)
+library(drs)
+
+
+# Scrape qualifying data
+qualifying_2023 <- qualifying_scraper(2023)
+qualifying_2022 <- qualifying_scraper(2022)
+qualifying_2021 <- qualifying_scraper(2021)
+qualifying_2020 <- qualifying_scraper(2020)
+qualifying_2019 <- qualifying_scraper(2019)
+qualifying_2018 <- qualifying_scraper(2018)
+qualifying_2017 <- qualifying_scraper(2017)
+qualifying_2016 <- qualifying_scraper(2016)
+qualifying_2015 <- qualifying_scraper(2015)
+qualifying_2014 <- qualifying_scraper(2014)
+
+# Combine all qualifying data
+qualifying_allyears <- rbind(qualifying_2023,
+                             qualifying_2022,
+                             qualifying_2021, 
+                             qualifying_2020,
+                             qualifying_2019,
+                             qualifying_2018,
+                             qualifying_2017,
+                             qualifying_2016,
+                             qualifying_2015,
+                             qualifying_2014)
+
+```
+
+
+## Distribution of Qualifying Times by Session
+
+*Note: Throughout this chapter, I'll introduce various visualization types. However, I knowingly include some visualizations that are not ideal for a given example. I did this for two reasons: (1) I wanted to include as much code as possible, in hopes that you may be able to use it for your own data, and (2) I wanted to include examples where we are forced to "try again".*
+
+One of the more basic ways to visualize qualifying times is to use a histogram. We can use histograms to plot the entire distribution of qualifying times from 2014 to 2023. In the figure below, I lump all qualifying times together (all sessions, drivers, teams, years, and circuits are included in the same distribution). 
+
+```{r, warning = F, message = F, fig.align ='center', fig.height= 5, fig.width= 8}
+qualifying_allyears %>%
+  dplyr::select(Q1_secs, Q2_secs, Q3_secs) %>%
+  pivot_longer(everything(), names_to = 'qualifying_session', values_to = 'time') %>%
+  ggplot(aes(time)) +
+  geom_histogram(alpha = 0.5) +
+  theme_bw() +
+  labs(x = 'Qualifying Time (secs)',
+       title = 'Distribution of all qualifying times',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = "none")
+
+```
+
+<br>
+<br>
+
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to create a histogram in R**
+:::
+
+The histogram geometry, `geom_histogram()`, can be used to plot the distribution of a single continuous variable. `geom_histogram()` counts the number of observations in a given gib, and plots along the x-axis. 
+
+For more information on using `geom_histogram()` in **ggplot2**, visit this link: https://ggplot2.tidyverse.org/reference/geom_histogram.html
+
+::::
+
+<br>
+<br>
+
+
+The plot above is not all that informative (at least in my opinion). Most people are probably not that interested in the distribution of all qualifying times, but rather the distribution by session, year, or some other grouping variable. Here's a look at the distribution of qualifying times by session. Obviously, Q3 times should be faster than Q2 which is faster than Q1.  
+
+```{r, warning = F, message = F, fig.align ='center', fig.height= 5, fig.width= 8}
+qualifying_allyears %>%
+  pivot_longer(c('Q1_secs', 'Q2_secs', 'Q3_secs'),
+               names_to = 'session',
+               values_to = 'time') %>%
+  mutate(Year = factor(Year),
+         session = str_remove(session, '_secs')) %>%
+  ggplot() +
+  geom_histogram(aes(x = time, fill = session),
+                 alpha = 0.5, show.legend = T,
+                 position="identity") +
+  theme_bw() +
+  labs(x = 'Qualifying Time (secs)',
+       title = 'Distribution of all qualifying times',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_fill_viridis_d()
+
+```
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to remove matched patterns in R**
+:::
+
+In the code chunk above, I use the `str_remove()` function to remove text from the session variable name. At times, you will be left with sloppy variable names (like I did here). I wanted to remove the "_secs" suffix from the session factor names. `str_remove()` makes this incredibly easy to do. 
+
+For more information on using `str_remove()`, visit this link: https://stringr.tidyverse.org/reference/str_remove.html
+
+::::
+
+<br>
+<br>
+
+There are more participants in the slower sessions, so the height of the distributions in the above figure are going to be different. We can standardize the heights of the distributions by using the following argument:
+
+`geom_histogram(aes(x = time, y = ..density.., fill = session)`
+
+
+```{r, warning = F, message = F, fig.align ='center', fig.height= 5, fig.width= 8}
+qualifying_allyears %>%
+  pivot_longer(c('Q1_secs', 'Q2_secs', 'Q3_secs'),
+               names_to = 'session',
+               values_to = 'time') %>%
+  mutate(Year = factor(Year),
+         session = str_remove(session, '_secs')) %>%
+  ggplot() +
+  geom_histogram(aes(x = time, y = ..density.., fill = session),
+                 alpha = 0.5, show.legend = T,
+                 position="identity") +
+  theme_bw() +
+  labs(x = 'Qualifying Time (secs)',
+       title = 'Distribution of all qualifying times',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_fill_viridis_d()
+
+```
+
+
+Even with this adjustment, the plot is still not very visually informative. As an alternative, we can split the plot by session:
+
+
+```{r, warning = F, message = F, fig.align ='center', fig.height= 5, fig.width= 10}
+qualifying_allyears %>%
+  pivot_longer(c('Q1_secs', 'Q2_secs', 'Q3_secs'),
+               names_to = 'session',
+               values_to = 'time') %>%
+  mutate(Year = factor(Year),
+         session = str_remove(session, '_secs')) %>%
+  ggplot() +
+  geom_histogram(aes(x = time, y = ..density.., fill = session),
+                 alpha = 0.5, show.legend = T,
+                 position="identity") +
+  theme_bw() +
+  labs(x = 'Qualifying Time (secs)',
+       title = 'Distribution of all qualifying times',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_fill_viridis_d() +
+  facet_wrap(~ session, ncol = 1)
+
+```
+
+
+A little better, but... not great. We should revisit the best way to visualize times by session later. But for now, we will shift our focus to yearly differences. 
+
+
+## Distribution of Qualifying Times by Year
+
+
+Visualizing the distribution of times by year is somewhat interesting, however. It is very easy to add a new dimension (year) to this histogram:
+
+```{r, warning = F, message = F, fig.align ='center', fig.height= 5, fig.width= 8}
+qualifying_allyears %>%
+  pivot_longer(c('Q1_secs', 'Q2_secs', 'Q3_secs'),
+               names_to = 'session',
+               values_to = 'time') %>%
+  mutate(Year = factor(Year)) %>%
+  ggplot() +
+  geom_histogram(aes(x = time, fill = Year),
+                 alpha = 0.5, show.legend = T,
+                 position="identity") +
+  theme_bw() +
+  labs(x = 'Qualifying Time (secs)',
+       title = 'Distribution of all qualifying times',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_fill_viridis_d()
+
+```
+
+T
+his includes all qualifying sessions together. To clear things up a bit, I will group the data by year while retaining different plots for each session:
+
+```{r, warning = F, message = F, fig.align ='center', fig.height= 5, fig.width= 10}
+qualifying_allyears %>%
+  pivot_longer(c('Q1_secs', 'Q2_secs', 'Q3_secs'),
+               names_to = 'session',
+               values_to = 'time') %>%
+  mutate(Year = factor(Year),
+         session = str_remove(session, '_secs')) %>%
+  ggplot() +
+  geom_histogram(aes(x = time, fill = Year),
+                 alpha = 0.5, show.legend = T,
+                 position="identity") +
+  theme_bw() +
+  labs(x = 'Qualifying Time (secs)',
+       title = 'Distribution of all qualifying times',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_fill_viridis_d() +
+  facet_wrap(~ session, scales = 'free_y')
+
+```
+
+
+This plot is still very tough to read! Luckily, **ggplot** is very flexible, so there's a few different ways to try and remedy this:
+
+Option 1: Use `facet_wrap()` to split the distributions into facets:
+
+```{r, warning = F, message = F, fig.align ='center', fig.height= 6, fig.width= 12}
+qualifying_allyears %>%
+  pivot_longer(c('Q1_secs', 'Q2_secs', 'Q3_secs'),
+               names_to = 'session',
+               values_to = 'time') %>%
+  mutate(Year = factor(Year),
+         session = str_remove(session, '_secs')) %>%
+  ggplot() +
+  geom_histogram(aes(x = time, fill = session),
+                 alpha = 0.5, show.legend = T,
+                 position="identity") +
+  theme_bw() +
+  labs(x = 'Qualifying Time (secs)',
+       title = 'Distribution of all qualifying times',
+       subtitle = '2014 - 2023',
+       fill = '')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'bottom') +
+  scale_fill_viridis_d() +
+  facet_wrap(~ Year, ncol = 5)
+
+```
+
+
+Option 2: Use `geom_density()`, in lieu of `geom_histogram()`. **ggplot**'s density geometry is a smooth alternative to the histogram geometry. 
+
+```{r, warning = F, message = F, fig.align='center', fig.height= 5, fig.width = 8}
+qualifying_allyears %>%
+  pivot_longer(c('Q1_secs', 'Q2_secs', 'Q3_secs'),
+               names_to = 'session',
+               values_to = 'time') %>%
+  mutate(Year = factor(Year),
+         session = str_remove(session, '_secs')) %>%
+  ggplot() +
+  geom_density(aes(x = time, fill = session),
+                 alpha = 0.5, show.legend = T,
+                 position="identity") +
+  theme_bw() +
+  labs(x = 'Qualifying Time (secs)',
+       title = 'Distribution of all qualifying times',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'bottom') +
+  scale_fill_viridis_d()
+
+```
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to create a kernel density plot in R**
+:::
+
+An alternative to using the histogram geometry, `geom_histogram()`, is the smoothed kernel density geometry, `geom_density()`. `geom_density()` calculates and plots a smoothed version of a histogram, commonly referred to as the kernel density estimate. 
+
+
+For more information on using `geom_density()` in **ggplot2**, visit this link: https://ggplot2.tidyverse.org/reference/geom_density.html
+
+::::
+
+<br>
+<br>
+
+These distributions include all qualifying sessions from 2014 to 2023, and the multi-modal nature of the distributions reflect this. 
+
+
+Or Option 3: Use `geom_density()` and `facet_wrap()` together. 
+
+```{r, warning = F, message = F, fig.align='center', fig.height= 6, fig.width = 12}
+qualifying_allyears %>%
+  pivot_longer(c('Q1_secs', 'Q2_secs', 'Q3_secs'),
+               names_to = 'session',
+               values_to = 'time') %>%
+  mutate(Year = factor(Year),
+         session = str_remove(session, '_secs')) %>%
+  ggplot() +
+  geom_density(aes(x = time, fill = session),
+                 alpha = 0.5, show.legend = T,
+                 position="identity") +
+  theme_bw() +
+  labs(x = 'Qualifying Time (secs)',
+       title = 'Distribution of all qualifying times',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'bottom') +
+  scale_fill_viridis_d() +
+  facet_wrap(~ Year, ncol = 5)
+
+```
+
+
+Option 4: Ridgelines
+
+One of my favorite ways to visualize shifts in a distribution over time is with *density ridgelines*. Density ridgelines are a way to visualize shifts in distributions across another variable. The name *ridgeline* was given because these plots give the impression of a mountain *ridge*. The density ridgeline is an alternative to standard density plots. The R package **ggridges** provides a very useful function called `geom_density_ridges_gradient()` that makes creating these plots very easy. I'll use this function to create a ridgeline plot of our qualifying data.
+
+
+```{r, warning = F, message = F, fig.align='center', fig.height= 10, fig.width = 8}
+library(ggridges)
+
+qualifying_allyears %>%
+  pivot_longer(c('Q1_secs', 'Q2_secs', 'Q3_secs'),
+               names_to = 'session',
+               values_to = 'time') %>%
+  mutate(Year = factor(Year),
+         session = str_remove(session, '_secs')) %>%
+  ggplot() +
+  geom_density_ridges_gradient(aes(x = time, y = Year, fill = stat(x)),
+                 alpha = 0.5, show.legend = T,
+                 position="identity") +
+  theme_bw() +
+  labs(x = 'Qualifying Time (secs)',
+       title = 'Distribution of qualifying times',
+       subtitle = 'All Grands Prix: 2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'none') +
+  scale_fill_viridis_c()
+
+```
+
+Interesting!  Let's build on this idea and start ooking into differences by Grand Prix.
+
+
+## Qualifying Times by Grand Prix
+
+
+Perhaps, a more useful way to use histograms is to plot the distribution for one Grand Prix at a time. For instance, here's the distribution of qualifying times at the Bahrain Grand Prix only:
+
+```{r, warning = F, message = F, fig.align='center', fig.height= 5, fig.width = 8}
+qualifying_allyears %>%
+  pivot_longer(c('Q1_secs', 'Q2_secs', 'Q3_secs'),
+               names_to = 'session',
+               values_to = 'time') %>%
+  mutate(Year = factor(Year),
+         session = str_remove(session, '_secs')) %>%
+  filter(Race == 'bahrain') %>%
+  ggplot() +
+  geom_density(aes(x = time, fill = Year),
+                 alpha = 0.5, show.legend = T,
+                 position="identity") +
+  theme_bw() +
+  labs(x = 'Qualifying Time (secs)',
+       title = 'Distribution of qualifying times at the Bahrain Grand Prix',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_fill_viridis_d()
+
+```
+
+
+I prefer to use **ggridges** for this type of task. So, I'll create a ridgeline plot for the Bahrain Grand Prix here: 
+
+```{r, warning = F, message = F, fig.align='center', fig.height= 10, fig.width = 8}
+
+qualifying_allyears %>%
+  pivot_longer(c('Q1_secs', 'Q2_secs', 'Q3_secs'),
+               names_to = 'session',
+               values_to = 'time') %>%
+  mutate(Year = factor(Year),
+         session = str_remove(session, '_secs')) %>%
+  filter(Race == 'bahrain') %>%
+  ggplot() +
+  geom_density_ridges_gradient(aes(x = time, y = Year, fill = stat(x)),
+                 alpha = 0.5, show.legend = T,
+                 position="identity") +
+  theme_bw() +
+  labs(x = 'Qualifying Time (secs)',
+       title = 'Distribution of qualifying times at the Bahrain Grand Prix',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'none') +
+  scale_fill_viridis_c()
+
+```
+
+
+Much better!
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to create a ridgeline plot in R**
+:::
+
+ Density ridgelines are a way to visualize shifts in distributions across another variable. The name *ridgeline* was given because these plots give the impression of a mountain *ridge*. 
+
+The **ggridges** package provides two main geometries for creating ridgeline plots:
+
+* `geom_ridgeline()`
+* `geom_density_ridges()`
+
+`geom_ridgeline()` takes height values directly to draw ridglines, while `geom_density_ridges()` first estimates the data densities before drawing the ridgelines. In my opinion, `geom_density_ridges()` is easier to use. 
+
+
+For more information on **ggridges**, visit this link: https://cran.r-project.org/web/packages/ggridges/vignettes/introduction.html
+
+::::
+
+<br>
+<br>
+
+
+One challenge with the qualifying data is that the fastest drivers are counted three times and the slowest only once. All drivers will typically have a Q1 time, but the fastest cars are probably driving more conservatively. So, how do we make comparisons between drivers? I prefer taking each driver's fastest time in their last session. So, if a driver made it to Q2 but not Q3, we should use his Q2 time. To use this data, we will need to further tidy up the data that we currently have using the following code:
+
+```{r, warning = F, message = F}
+qualifying_allyears <- qualifying_allyears %>%
+  mutate(Q_secs = case_when(
+    !is.na(Q3_secs) ~ Q3_secs,
+    is.na(Q3_secs) & !is.na(Q2_secs) ~ Q2_secs,
+    is.na(Q3_secs) & is.na(Q2_secs) & !is.na(Q1_secs) ~ Q1_secs)) 
+  
+```
+
+
+Now, I will use `geom_histogram()` / `geom_density()` to compare two Grands Prix: Bahrain vs Monaco. 
+
+
+```{r, warning = F, message = F, fig.align='center', fig.height= 5, fig.width = 8}
+# histogram
+qualifying_allyears %>%
+  mutate(Year = factor(Year)) %>%
+  filter(Race %in% c('bahrain', 'monaco')) %>%
+  ggplot() +
+  geom_histogram(aes(x = Q_secs, fill = Race),
+                 alpha = 0.5, show.legend = T,
+                 position="identity") +
+  theme_bw() +
+  labs(fill = 'Grand Prix',
+       x = 'Qualifying Time (secs)',
+       title = 'Distribution of qualifying times',
+       subtitle = 'Bahrain vs Monaco')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+
+#density
+qualifying_allyears %>%
+  mutate(Year = factor(Year)) %>%
+  filter(Race %in% c('bahrain', 'monaco')) %>%
+  ggplot() +
+  geom_density(aes(x = Q_secs, fill = Race),
+                 alpha = 0.5, show.legend = T,
+                 position="identity") +
+  theme_bw() +
+  labs(fill = 'Grand Prix',
+       x = 'Qualifying Time (secs)',
+       title = 'Distribution of qualifying times',
+       subtitle = 'Bahrain vs Monaco')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+
+```
+
+
+Clearly times in Bahrain are different than those at Monaco. In fact, all circuits are going to vary to some degree. The following figure shows the average qualifying times by Grand Prix. 
+
+
+```{r, warning = F, message = F, fig.align='center', fig.height= 5, fig.width = 8}
+
+qualifying_allyears %>%
+  group_by(Race) %>%
+  summarize(mean = mean(Q_secs, na.rm = T),
+            sd = sd(Q_secs, na.rm = T)) %>% 
+  ggplot(aes(x = mean, y = fct_reorder(Race, mean))) +
+  geom_point(position = position_jitter(h = 0, w = 0.3), alpha = 0.5) +
+  geom_hline(yintercept = seq(37, 1, -2), col = 'grey', size = 3, alpha = 0.15) +
+  theme_bw() +
+  labs(x = 'Average Qualifying Time (secs)',
+       y = 'Grand Prix',
+       title = 'Average Qualifying Times',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = "none")
+```
+
+
+A lot can happen during a qualifying session causing variability among the cars. There is a spectrum of performance across cars, drivers, sessions, and year. Therefore, it's a good idea to include a measure of variance in this plot. So, we can add standard error bars to the plot we just made. 
+
+```{r, warning = F, message = F, fig.align='center', fig.height= 5, fig.width = 8}
+qualifying_allyears %>%
+  group_by(Race) %>%
+  summarize(mean = mean(Q_secs, na.rm = T),
+            sd = sd(Q_secs, na.rm = T)) %>% 
+  mutate(lower = mean  - sd,
+         upper = mean + sd) %>% 
+  ggplot(aes(x = mean, xmin = lower, xmax = upper, y = fct_reorder(Race, mean))) +
+  geom_pointrange(alpha = 0.5) +
+  geom_hline(yintercept = seq(37, 1, -2), col = 'grey', size = 3, alpha = 0.15) +
+  theme_bw() +
+  labs(x = 'Average Qualifying Time \u00b1 SD (secs)',
+       y = 'Grand Prix',
+       title = 'Average Qualifying Times',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = "none")
+```
+
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**Plotting a point-range in ggplot**
+:::
+
+Similar to earlier plots using `stat_summary()`, we can manually construct a point-range in **ggplot** using the `geom_pointrange()`. 
+
+In the example above, the continuous variable is plotted along the x-axis. I wanted to plot the mean ± 1 standard deviation, so I pass arguments for `x`, `xmin` and `xmax` that define the mean, minimum, and maximum values in this geometry. 
+
+
+For more information on using `geom_pointrange()` in **ggplot2**, visit this link: https://ggplot2.tidyverse.org/reference/geom_linerange.html
+
+::::
+
+<br>
+<br>
+
+Previously, we demonstrated that *practice* times vary by year. So, qualifying times must follow a similar pattern. Using the code below, we can plot the average qualifying times by year. 
+
+```{r, warning = F, message = F, fig.align='center', fig.height= 5, fig.width = 8}
+qualifying_allyears %>%
+  mutate(Year = factor(Year)) %>%
+  group_by(Year) %>%
+  summarize(mean = mean(Q_secs, na.rm = T),
+            sd = sd(Q_secs, na.rm = T)) %>% 
+  mutate(lower = mean  - sd,
+         upper = mean + sd) %>%
+  ggplot(aes(y = mean, x = Year)) +
+  geom_point(alpha = 0.5, size = 3) +
+  theme_bw() +
+  labs(x = 'Year',
+       y = 'Average Qualifying Time (secs)',
+       title = 'Average Qualifying Times',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = "none")
+```
+
+
+This plot computes an average for all cars and circuits. This collection of qualifying times will undoubtedly include lots of variability! Using `geom_pointrange()`, we can try to capture that variability in the plot below: 
+
+
+```{r, warning = F, message = F, fig.align='center', fig.height= 5, fig.width = 8}
+qualifying_allyears %>%
+  mutate(Year = factor(Year)) %>%
+  group_by(Year) %>%
+  summarize(mean = mean(Q_secs, na.rm = T),
+            sd = sd(Q_secs, na.rm = T)) %>% 
+  mutate(lower = mean  - sd,
+         upper = mean + sd) %>%
+  ggplot(aes(y = mean, ymin = lower, ymax = upper, x = Year)) +
+  geom_pointrange(alpha = 0.5) +
+  theme_bw() +
+  labs(x = 'Year',
+       y = 'Average Qualifying Time \u00b1 SD (secs)',
+       title = 'Average Qualifying Times',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = "none")
+```
+
+
+To chip away at this variability, we can replicate this plot for just a handful of circuits (i.e. Australia, Monaco, Brazil, Austria, Canada, and the United States). Below, I use `facet_wrap()` to split the figure and assign each circuit its own facet. Notice how much tighter the standard deviations have become... much better!
+
+```{r, fig.align='center', fig.height= 7, fig.width = 12}
+qualifying_allyears %>%
+  filter(Race %in% c('australia', 'monaco', 'brazil', 'austria', 'canada', 'united-states')) %>% 
+  mutate(Year = factor(Year)) %>%
+  group_by(Year, Race) %>%
+  summarize(mean = mean(Q_secs, na.rm = T),
+            sd = sd(Q_secs, na.rm = T)) %>% 
+  mutate(lower = mean  - sd,
+         upper = mean + sd) %>% 
+  ungroup() %>%
+  ggplot(aes(y = mean, ymin = lower, ymax = upper, x = Year)) +
+  geom_pointrange(alpha = 0.5) +
+  theme_bw() +
+  labs(x = 'Year',
+       y = 'Average Qualifying Time \u00b1 SD (secs)',
+       title = 'Average Qualifying Times',
+       subtitle = '2014 - 2023')+
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        plot.subtitle = element_text(hjust = 0.5, size = 15),
+        legend.position = "none",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10),
+        axis.text.y = element_text(size = 10),
+        strip.text = element_text(size = 12),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12)) +
+  facet_wrap(~ Race, scales = 'free_y')
+```
+
+
+In the next section, we will dive a bit deeper into qualifying time progression. 
+
+## Car Progression Over Time 
+
+How does car development progress over time? Below, we can look at how the qualifying pace changes over time for the first race of most years: the Australian Grand Prix. 
+
+
+```{r, warning = F, message = F, fig.align='center', fig.height= 5, fig.width = 8}
+qualifying_allyears %>%
+  mutate(Year = factor(Year)) %>%
+  filter(Race == 'australia') %>%
+  ggplot(aes(Year, Q_secs)) +
+  geom_point(position = position_jitter(h = 0, w = 0.3), alpha = 0.5) +
+  theme_bw() +
+  labs(x = 'Year',
+       y = 'Best Qualifying Time (secs)',
+       title = 'Australian Grand Prix Qualifying',
+       subtitle = '2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+
+During 2014 qualifying in Australia, rain arrived during Q2. I will color these points in blue below. 
+
+```{r, warning = F, message=F, fig.align='center', fig.height= 5, fig.width = 8}
+qualifying_allyears %>%
+  mutate(Year = factor(Year)) %>%
+  filter(Race == 'australia') %>%
+  mutate(rain = ifelse(Year == '2014' & Q_secs > 100, 'rain during Q2 & Q3', ' ')) %>% 
+  ggplot() +
+  geom_point(aes(Year, Q_secs),
+             position = position_jitter(seed= 123, h = 0, w = 0.3), alpha = 0.5) +
+  geom_point(aes(Year, Q_secs, col = rain), 
+             position = position_jitter(seed = 123, h = 0, w = 0.3), alpha = 0.5) +
+  theme_bw() +
+  labs(x = 'Year',
+       y = 'Best Qualifying Time (secs)',
+       title = 'Australian Grand Prix Qualifying',
+       subtitle = '2014 - 2023') +
+  scale_colour_manual("", values = c('rain during Q2 & Q3' = 'cornflowerblue', ' ' = 'transparent')) +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**Reproducible *jittering* in ggplot**
+:::
+
+In the plot above, I had to get a bit creative. My goal was to highlight the times in 2014 by using a blue color. And, I only wanted a single label for those times. My solution was to plot all points as a first layer, and then re-plot the data using a conditional coloring if the data was labeled with `rain`. The first layer was randomly jittered, so I needed to preserve that randomness for the second layer. To accomplish this, I passed an argument for a random seed (i.e. `seed = 123`) to ensure that the *jitter*  was reproducible.
+
+
+For more information on *jittering* in **ggplot2**, visit this link: https://ggplot2.tidyverse.org/reference/position_jitter.html
+
+::::
+
+<br>
+<br>
+
+
+These times set during a rainy qualifying session would complicate our understanding of a car's progression over time. To avoid their influence, we can filter the rain-influenced times from Q2 and Q3 in 2014, and re-plot below. I'll add a best-fit linear regression line that describes the improvement of qualifying times from 2014 to 2022, on average. 
+
+```{r, warning = F, message=F, fig.align='center', fig.height= 5, fig.width = 8}
+qualifying_allyears %>%
+  filter(Race == 'australia') %>%
+  mutate(rain = ifelse(Year == 2014 & Q_secs > 100, 'rain during Q2', ' ')) %>% 
+  filter(rain == ' ') %>% 
+  ggplot(aes(Year, Q_secs)) +
+  geom_point(position = position_jitter(seed= 123, h = 0, w = 0.3), alpha = 0.5) +
+  stat_smooth(method = 'lm', se = F, size = 0.3, alpha = 0.5) + 
+  theme_bw() +
+  labs(x = 'Year',
+       y = 'Best Qualifying Time (secs)',
+       title = 'Australian Grand Prix Qualifying',
+       subtitle = '2014 - 2023') +
+  scale_x_continuous(breaks = c(2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**Adding a best-fit line in ggplot**
+:::
+
+The `stat_smooth()` function in **ggplot2** can help aid the eye in observing patterns in the data. If no method is declared in the function call, a **loess** (locally estimated scatter plot smoothing) function is fit to the data. 
+
+In the example above, I add `method = "lm"` to the function call, which adds a linear model to the data. By default, `stat_smooth()` also adds a 95% confidence interval around the fit. In the example above, I disabled the confidence interval by adding `se = FALSE` to the call. 
+
+
+For more information on best-fit lines, or smoothed conditional means, in **ggplot2**, visit this link: https://ggplot2.tidyverse.org/reference/geom_smooth.html
+
+::::
+
+<br>
+<br>
+
+While the `stat_smooth()` function allows us to easily add a linear regression line to the scatter plot, it doesn't quantify the coefficient estimates. In the next chapter, we will explore using linear regression models to estimate the relationship between practice times, qualifying times, and more!
+
+
+## Next Chapter
+
+In the next chapter, I will explore the relationship between practice pace and qualifying pace. 
+
+
+\newpage

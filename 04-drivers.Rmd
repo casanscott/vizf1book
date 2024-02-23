@@ -1,0 +1,1547 @@
+# Drivers
+
+```{r, include = F}
+library(tidyverse)
+library(broom)
+library(ggtext)
+library(ciTools)
+library(merTools)
+library(ggrepel)
+library(emmeans)
+library(gghighlight)
+library(ggtext)
+
+# Qualifying Results
+qualifying_allyears <- read.csv("qualifying_allyears.csv")
+
+# Create title color coder function
+title_color_coder <- function(leading_regular_text, label_1, color_1, middle_regular_text, label_2, color_2, trailing_regular_text){
+
+  title_text <- paste0(leading_regular_text, "<span style='color:", color_1,";'>",label_1,"</span>", middle_regular_text, "<span style='color:", color_2,";'>", label_2, "</span>", trailing_regular_text)
+
+  return(title_text)
+
+}
+
+
+qualifying_allyears <- qualifying_allyears %>%
+  mutate(Q_secs = case_when(
+    !is.na(Q3_secs) ~ Q3_secs,
+    is.na(Q3_secs) & !is.na(Q2_secs) ~ Q2_secs,
+    is.na(Q3_secs) & is.na(Q2_secs) & !is.na(Q1_secs) ~ Q1_secs)) 
+```
+
+
+What separates the great drivers from the merely good drivers? There are only 20 Formula 1 seats available in the world, and only the best even get considered for the job. A driver needs talent, money, an FIA super license, and a lot of luck to ever start a Grand Prix. And despite the incredibly tough filtering mechanisms for talent in F1, there remain a few outliers a few drivers that stand apart. 
+
+In his autobiography *Total Competition*, the legendary team principal Ross Brawn described how Michael Schumacher, perhaps the greatest driver of all time, simply had more *capacity* available because of his talent. Brawn felt that Michael possessed so much talent for driving that he was free to think through more things while driving. Team principals are obviously in a great position to judge the talent of drivers, and each year, www.formula1.com publishes the results from a team principal survey of the top drivers in the sport. Here's what the results from the past three years looks like (including only drivers that drove in 2023):
+
+
+```{r, warning = F, message = F, fig.align='center', fig.height = 8, fig.width = 8}
+
+# Create a dataframe with yearly rankings
+team_principal_survey <- data.frame(Driver = c('VER', 'ALO', 'NOR', 'LEC', 'HAM',
+                                               'SAI', 'PIA', 'ALB', 'RUS', 'PER')) %>%
+  mutate(`2023` = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+         `2022` = c(1, 8, 6, 2, 4, 7, NA, NA, 3, 5),
+         `2021` = c(1, 6, 3, 5, 2, 4, NA, NA, 8, NA))
+
+# Plot the results
+team_principal_survey %>%
+  pivot_longer(-Driver, names_to = 'Year', values_to = 'Rank') %>%
+  ggplot(aes(Year, Rank, col = Driver, group = Driver)) +
+    geom_line(size = 2) +
+  geom_point(size = 3) +
+    theme_bw() +
+  scale_y_reverse(labels = seq(1, 10, 1),
+                     breaks = seq(1, 10, 1))  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'none') +
+  labs(title = 'Top Drivers',
+       subtitle = 'based on team principal rankings') +
+  geom_text_repel(data = ~ subset(.x, Year == 2023),
+            aes(label = Driver),
+            nudge_x = 0.1, nudge_y = 0, show.legend = F) +
+  scale_color_manual(values = c("red", "red", 
+                                "cyan3", "cyan3",
+                                "blue",
+                                "darkslateblue",
+                                "darkred",
+                                "darkseagreen4", "darkseagreen4",
+                                "darkorange", "darkorange",
+                                "cornflowerblue", 
+                                "navy", "navy"),
+                     breaks = c("LEC", "SAI",
+                                "HAM", "RUS", 
+                                "OCO", 
+                                "GAS",  
+                                "BOT",
+                                "ALO", "VET",
+                                "NOR", "PIA",
+                                "ALB",
+                                "PER", "VER"
+                                ))
+
+```
+
+
+
+Clearly team principals think highly of the reigning world champion Max Verstappen. But, how do the team principals determine these rankings? I'm not entirely sure. Driver skill is a surprisingly difficult trait to describe and understand. What are the essential skills of a driver? And how do you measure those skills? Well, most agree that the best drivers share the following traits:
+
+* consistency
+* adaptability
+* qualifying pace
+* race pace
+* tire management
+* an understanding of the car's limits and how to extract all of the performance from a car
+* performance in wet conditions
+
+Are these traits measurable? Not really (at least for the common fan). While I wish there was some data available that described these driver traits, I am afraid we are limited to merely analyzing driver *performance*. In this chapter, I'll use the **drs** package to pull data from www.formula1.com and visualize driver performance during qualifying and the race with **ggplot**. The most obvious and simplest  place to start is to plot race results by driver and circuit. Later on in the chapter, we can also look at each driver's qualifying pace compared to (A) the rest of the grid and (B) their teammate. The best drivers in history consistently out-qualify other team's top drivers, and more importantly, their own teammates. 
+
+
+## Race Performance
+
+I find heat maps an enjoyable way to visualize race results. So, throughout this section, I'll create heat maps for each year from 2014 to 2023. I will start with 2023, whcih was effectively the Max Verstappen show. Max won his third world title and Red Bull collected their 2nd consecutive (6th total) constructors championship. From the very first race, Red Bull appeared to be nearly unbeatable. And ultimately, Max completed *arguably* the most dominant season of all time by winning 19 of 22 races and finishing on the podium in all but one Grand Prix. In 2023, Max had a winning percentage of 86.36%, eclipsing the previous long-standing record set by Alberto Ascari in 1952.
+
+
+```{r, warning = F, message = F, fig.align='center', fig.height = 8, fig.width = 8}
+library(drs)
+library(ggthemes)
+
+# Pull race results
+races2023 <- race_result_scraper(2023)
+
+races2023 %>%
+  mutate( n = 1:n(),
+          Race = fct_reorder(Race, desc(n))) %>%
+  group_by(Race) %>% 
+  mutate(Race_number = cur_group_id()) %>%
+  group_by(Driver) %>% 
+  mutate(sum_pts = sum(Points, na.rm = T)) %>%
+  ungroup() %>% 
+  ggplot(aes(fct_reorder(Driver, desc(sum_pts)), Race, fill = Points)) +
+  geom_tile(color="white", size=0.1, alpha = 0.75) +
+  theme_bw() +
+  labs(title = 'Points scored during the 2023 season',
+       y = 'Race',
+       x = 'Driver') + 
+  theme_tufte(base_family="Helvetica")  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position="bottom",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_viridis_c(option = 'magma',
+                       guide = 'legend',
+                       breaks = c(0,1,2,4,6,8,10,12,15,18,25,26))
+```
+
+
+The 2022 Formula 1 season was also dominated by Red Bull. Max Verstappen secured the Driver's Championship by the 18th race of the season, the Japanese Grand Prix. However, Red Bull's 2022 season opened with some uncertainty after experiencing 3 retirements in first two races. Both Max Verstappen and Sergio Pérez retired from the Bahrain Grand Prix in the closing laps with fuel issues. In the Australian Grand Prix, Verstappen again retired with fuel issues. Ultimately, Max finished 2022 with 15 wins and 454 points, the most in F1 history (at the time). Charles LeClerc took 2nd (308 points) and Sergio Perez took 3rd (305 points) in the Driver's Championship. 
+
+
+
+```{r, warning = F, message = F, fig.align='center', fig.height = 8, fig.width = 8}
+
+# Pull race results
+races2022 <- race_result_scraper(2022)
+
+races2022 %>%
+  mutate( n = 1:n(),
+          Race = fct_reorder(Race, desc(n))) %>%
+  group_by(Race) %>% 
+  mutate(Race_number = cur_group_id()) %>%
+  group_by(Driver) %>% 
+  mutate(sum_pts = sum(Points, na.rm = T)) %>%
+  ungroup() %>% 
+  ggplot(aes(fct_reorder(Driver, desc(sum_pts)), Race, fill = Points)) +
+  geom_tile(color="white", size=0.1, alpha = 0.75) +
+  theme_bw() +
+  labs(title = 'Points scored during the 2022 season',
+       y = 'Race',
+       x = 'Driver') + 
+  theme_tufte(base_family="Helvetica")  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position="bottom",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_viridis_c(option = 'magma',
+                       guide = 'legend',
+                       breaks = c(0,1,2,4,6,8,10,12,15,18,25,26))
+```
+
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to create a heat map in ggplot**
+:::
+
+To create a heap map in ggplot2, use the `geom_tile()` geometry. You will need to pass categorical variables to `x` and `y` arguments and the continuous color fill variable to the `fill` argument. 
+
+For more information on using `geom_tile()` in **ggplot2**, visit this link: https://plotly.com/ggplot2/geom_tile/
+
+::::
+
+
+<br>
+<br>
+
+
+
+The 2021 Formula 1 season was a modern classic! There was a year-long battle between Red Bull and Mercedes (the reigning 7-time World Constructor's Champions). Max Verstappen and Lewis Hamilton (the reigning and 7-time World Driver's Champion) combined to win 18 out of 22 Grands Prix in 2021 (Verstappen with 10 wins, and Hamilton with 8 wins). Both drivers entered the final race of the season (the Abu Dhabi Grand Prix) tied on points. This final race, and the 2021 Driver's Championship, was decided on the final lap of the season when Max Verstappen overtook Hamilton following a safety car restart. 
+
+```{r, warning = F, message = F, fig.align='center', fig.height = 8, fig.width = 8}
+
+# Pull race results
+races2021 <- race_result_scraper(2021)
+
+races2021 %>%
+  mutate( n = 1:n(),
+          Race = fct_reorder(Race, desc(n))) %>%
+  group_by(Race) %>% 
+  mutate(Race_number = cur_group_id()) %>%
+  group_by(Driver) %>% 
+  mutate(sum_pts = sum(Points, na.rm = T)) %>%
+  ungroup() %>% 
+  ggplot(aes(fct_reorder(Driver, desc(sum_pts)), Race, fill = Points)) +
+  geom_tile(color="white", size=0.1, alpha = 0.75) +
+  theme_bw() +
+  labs(title = 'Points scored during the 2021 season',
+       y = 'Race',
+       x = 'Driver') + 
+  theme_tufte(base_family="Helvetica")  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position="bottom",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_viridis_c(option = 'magma',
+                       guide = 'legend',
+                       breaks = c(0,1,2,4,6,8,10,12,15,18,25,26))
+```
+
+
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**Using a pretty theme for a heat map in ggplot**
+:::
+
+The `theme_tufte()` function in ggplot2 cleans up the formatting for a figure, by using no border, no axis lines, and no grids. 
+
+For more information on using `theme_tufte()` in **ggplot2**, visit this link: https://rdrr.io/cran/ggthemes/man/theme_tufte.html
+
+For more information about Edward Tufte's principles, see this reference: 
+
+Tufte, Edward R. (2001) The Visual Display of Quantitative Information, Chapter 6.
+
+::::
+
+
+<br>
+<br>
+
+
+
+The 2020 season was shortened and delayed due to the COVID-19 pandemic. Originally planned for 22 Grands Prix, this season only contested 17 races and several venues cancelled. Hamilton and Valtteri Bottas finished 1st and 2nd in the Driver's standings as Mercedes dominated the 2020 season. 
+
+```{r, warning = F, message = F, fig.align='center', fig.height = 8, fig.width = 8}
+
+# Pull race results
+races2020 <- race_result_scraper(2020)
+
+races2020 %>%
+  mutate( n = 1:n(),
+          Race = fct_reorder(Race, desc(n))) %>%
+  group_by(Race) %>% 
+  mutate(Race_number = cur_group_id()) %>%
+  group_by(Driver) %>% 
+  mutate(sum_pts = sum(Points, na.rm = T)) %>%
+  ungroup() %>% 
+  ggplot(aes(fct_reorder(Driver, desc(sum_pts)), Race, fill = Points)) +
+  geom_tile(color="white", size=0.1, alpha = 0.75) +
+  theme_bw() +
+  labs(title = 'Points scored during the 2020 season',
+       y = 'Race',
+       x = 'Driver') + 
+  theme_tufte(base_family="Helvetica")  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position="bottom",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_viridis_c(option = 'magma',
+                       guide = 'legend',
+                       breaks = c(0,1,2,4,6,8,10,12,15,18,25,26))
+```
+
+
+
+
+Lewis Hamilton won 11 races and secured his sixth Driver's Championship in 2019, as Mercedes won a total of 15 out of 21 races. Valtteri Bottas won 4 races, while Verstappen and LeClerc won 3 and 2 races, respectively. 
+
+```{r, warning = F, message = F, fig.align='center', fig.height = 8, fig.width = 8}
+
+# Pull race results
+races2019 <- race_result_scraper(2019)
+
+races2019 %>%
+  mutate( n = 1:n(),
+          Race = fct_reorder(Race, desc(n))) %>%
+  group_by(Race) %>% 
+  mutate(Race_number = cur_group_id()) %>%
+  group_by(Driver) %>% 
+  mutate(sum_pts = sum(Points, na.rm = T)) %>%
+  ungroup() %>% 
+  ggplot(aes(fct_reorder(Driver, desc(sum_pts)), Race, fill = Points)) +
+  geom_tile(color="white", size=0.1, alpha = 0.75) +
+  theme_bw() +
+  labs(title = 'Points scored during the 2019 season',
+       y = 'Race',
+       x = 'Driver') + 
+  theme_tufte(base_family="Helvetica")  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position="bottom",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_viridis_c(option = 'magma',
+                       guide = 'legend',
+                       breaks = c(0,1,2,4,6,8,10,12,15,18,25,26))
+```
+
+
+
+
+
+
+Four-time World Champions Lewis Hamilton and Sebastian Vettel battled closely during 2018. This was the first season in which *two* four-time world champions battled for a fifth championship. The Championship lead swapped hands between Hamilton and Vettel five times during 2018, and was ultimately secured by Hamilton at the Mexican Grand Prix.
+
+
+```{r, warning = F, message = F, fig.align='center', fig.height = 8, fig.width = 8}
+
+# Pull race results
+races2018 <- race_result_scraper(2018)
+
+races2018 %>%
+  mutate( n = 1:n(),
+          Race = fct_reorder(Race, desc(n))) %>%
+  group_by(Race) %>% 
+  mutate(Race_number = cur_group_id()) %>%
+  group_by(Driver) %>% 
+  mutate(sum_pts = sum(Points, na.rm = T)) %>%
+  ungroup() %>% 
+  ggplot(aes(fct_reorder(Driver, desc(sum_pts)), Race, fill = Points)) +
+  geom_tile(color="white", size=0.1, alpha = 0.75) +
+  theme_bw() +
+  labs(title = 'Points scored during the 2018 season',
+       y = 'Race',
+       x = 'Driver') + 
+  theme_tufte(base_family="Helvetica")  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position="bottom",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_viridis_c(option = 'magma',
+                       guide = 'legend',
+                       breaks = c(0,1,2,4,6,8,10,12,15,18,25,26))
+```
+
+
+
+
+
+2017 marked the first time during Mercedes' turbo-hybrid era reign that another team presented a legitimate challenge. Sebastian Vettel led the championship deep into this season, but Hamilton ultimately won his 4th title  by 46 points. 
+
+```{r, warning = F, message = F, fig.align='center', fig.height = 8, fig.width = 8}
+
+# Pull race results
+races2017 <- race_result_scraper(2017)
+
+races2017 %>%
+  mutate( n = 1:n(),
+          Race = fct_reorder(Race, desc(n))) %>%
+  group_by(Race) %>% 
+  mutate(Race_number = cur_group_id()) %>%
+  group_by(Driver) %>% 
+  mutate(sum_pts = sum(Points, na.rm = T)) %>%
+  ungroup() %>% 
+  ggplot(aes(fct_reorder(Driver, desc(sum_pts)), Race, fill = Points)) +
+  geom_tile(color="white", size=0.1, alpha = 0.75) +
+  theme_bw() +
+  labs(title = 'Points scored during the 2017 season',
+       y = 'Race',
+       x = 'Driver') + 
+  theme_tufte(base_family="Helvetica")  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position="bottom",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_viridis_c(option = 'magma',
+                       guide = 'legend',
+                       breaks = c(0,1,2,4,6,8,10,12,15,18,25,26))
+```
+
+
+
+
+
+Nico Rosberg won his only World Driver's Championship title in 2016. During an intense intra-team battle, Rosberg won the first four races while Hamilton won the final four. Rosberg secured his title over teammate Hamilton in the final race of the season. Shortly after winning the title, Rosberg announced his retirement from Formula 1. 
+
+```{r, warning = F, message = F, fig.align='center', fig.height = 8, fig.width = 8}
+
+# Pull race results
+races2016 <- race_result_scraper(2016)
+
+races2016 %>%
+  mutate( n = 1:n(),
+          Race = fct_reorder(Race, desc(n))) %>%
+  group_by(Race) %>% 
+  mutate(Race_number = cur_group_id()) %>%
+  group_by(Driver) %>% 
+  mutate(sum_pts = sum(Points, na.rm = T)) %>%
+  ungroup() %>% 
+  ggplot(aes(fct_reorder(Driver, desc(sum_pts)), Race, fill = Points)) +
+  geom_tile(color="white", size=0.1, alpha = 0.75) +
+  theme_bw() +
+  labs(title = 'Points scored during the 2016 season',
+       y = 'Race',
+       x = 'Driver') + 
+  theme_tufte(base_family="Helvetica")  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position="bottom",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_viridis_c(option = 'magma',
+                       guide = 'legend',
+                       breaks = c(0,1,2,4,6,8,10,12,15,18,25,26))
+```
+
+
+
+
+
+Lewis Hamilton defended his World Championship in 2015, securing the title with three races to go in the season. Nico Rosberg (Hamilton's teammate) and Sebastian Vettel finished 2nd and 3rd, respectively. 
+
+```{r, warning = F, message = F, fig.align='center', fig.height = 8, fig.width = 8}
+
+# Pull race results
+races2015 <- race_result_scraper(2015)
+
+races2015 %>%
+  mutate( n = 1:n(),
+          Race = fct_reorder(Race, desc(n))) %>%
+  group_by(Race) %>% 
+  mutate(Race_number = cur_group_id()) %>%
+  group_by(Driver) %>% 
+  mutate(sum_pts = sum(Points, na.rm = T)) %>%
+  ungroup() %>% 
+  ggplot(aes(fct_reorder(Driver, desc(sum_pts)), Race, fill = Points)) +
+  geom_tile(color="white", size=0.1, alpha = 0.75) +
+  theme_bw() +
+  labs(title = 'Points scored during the 2015 season',
+       y = 'Race',
+       x = 'Driver') + 
+  theme_tufte(base_family="Helvetica")  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position="bottom",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_viridis_c(option = 'magma',
+                       guide = 'legend',
+                       breaks = c(0,1,2,4,6,8,10,12,15,18,25,26))
+```
+
+
+
+
+The 2014 season marked the introduction of a new engine formula. The previous era's 2.4 liter V8 engine was replaced by a 1.6 liter turbocharged V6 engine with an energy recovery system. As a result, Mercedes experienced a great engine advantage in 2014, an edge that carried through the entirety of this turbo-hybrid era. Mercedes won their first Constructor's Championship by nearly 300 points, and Hamilton won his second Driver's Championship. 
+
+```{r, warning = F, message = F, fig.align='center', fig.height = 8, fig.width = 8}
+
+# Pull race results
+races2014 <- race_result_scraper(2014)
+
+races2014 %>%
+  mutate( n = 1:n(),
+          Race = fct_reorder(Race, desc(n))) %>%
+  group_by(Race) %>% 
+  mutate(Race_number = cur_group_id()) %>%
+  group_by(Driver) %>% 
+  mutate(sum_pts = sum(Points, na.rm = T)) %>%
+  ungroup() %>% 
+  mutate(Points = ifelse(Race == 'abu-dhabi', Points / 2, Points)) %>% # convert the Abu Dhabi points
+  ggplot(aes(fct_reorder(Driver, desc(sum_pts)), Race, fill = Points)) +
+  geom_tile(color="white", size=0.1, alpha = 0.75) +
+  theme_bw() +
+  labs(title = 'Points scored during the 2014 season',
+       y = 'Race',
+       x = 'Driver') + 
+  theme_tufte(base_family="Helvetica")  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position="bottom",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_viridis_c(option = 'magma',
+                       guide = 'legend',
+                       breaks = c(0,1,2,4,6,8,10,12,15,18,25,26))
+```
+
+
+
+*Note: Double points were awarded at the 2014 Abu Dhabi Grand Prix. I manually converted these back to a 25 point scale to aid in the visualization.*
+
+
+
+## Qualifying Pace
+
+Qualifying pace, or a driver's flat-out speed over 1 lap, is another attribute that sets drivers apart. The driver-effect can sometimes be difficult to separate from the car-effect, however. For this reason, comparing teammates is one of best ways to evaluate a driver's qualifying pace. As I mentioned earlier in the chapter, the best drivers of all time consistently out-qualify their teammates. Another way to evaluate qualifying pace is by looking at the season-long performance of drivers in qualifying. Despite the differences in car quality, some drivers are simply more capable of *very* fast qualifying times. Throughout this section, I will create figures that (A) display intra-team qualifying battles, and (B) plot a driver's overall distribution of qualifying times for an entire season. I will start with the 2023 season, and work backward. 
+
+
+### 2023
+
+Here's a look at the intra-team qualifying battles for 2023. The Mercedes battle between Lewis Hamilton and George Hamilton was quite close, while the battle at Red Bull, Aston Martin, and Williams was not. 
+
+*Note: This figure actually required quite a bit of data wrangling. It was somewhat annoying!*
+
+```{r, warning=F, message=F, fig.align='center', fig.height = 10, fig.width = 8}
+quali2023 <- qualifying_scraper(2023)
+
+quali2023 %>%
+  ungroup() %>%
+  dplyr::select(Race, Position, Car, Driver) %>%
+  mutate(Position = as.integer(Position),
+         Position = ifelse(is.na(Position), 21, Position)) %>% 
+  group_by(Car, Race) %>% 
+  arrange(Driver) %>% 
+  mutate(driver_num = 1:n()) %>% 
+  pivot_wider(names_from = 'driver_num', values_from = c('Driver', 'Position')) %>%
+  mutate(best_qualifier = ifelse(Position_1 < Position_2, Driver_1, Driver_2)) %>%
+  ungroup() %>%
+  group_by(Car) %>%
+  count(best_qualifier) %>%
+  mutate(percentage = n / sum(n)) %>%
+  filter(!is.na(best_qualifier)) %>%  
+  ggplot(aes(y = fct_reorder(best_qualifier, Car), x = percentage, fill = Car)) +
+  geom_bar(stat = 'identity', position = 'dodge', alpha = 0.5, col = 'black') +
+  theme_bw() +
+  scale_x_continuous(labels = scales::percent_format()) +
+  facet_wrap(~ factor(Car,
+                      levels = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Alpine Renault",
+                                 "AlphaTauri Honda RBPT",
+                                 "Alfa Romeo Ferrari", 
+                                 "Aston Martin Aramco Mercedes",
+                                 "McLaren Mercedes",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing Honda RBPT")),
+                      ncol = 1, strip.position="top", scales = 'free_y') +
+  labs(y = 'Driver',
+       x = 'Season-long Qualifying Win Proportion',
+       title = 'Intra-team Qualifying Battles',
+       subtitle = '2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  scale_fill_manual(values = c("red", 
+                                "cyan3",  
+                                "black", 
+                                "blue",
+                               "darkslateblue", 
+                                "darkred",  
+                                "darkseagreen4", 
+                                "darkorange", 
+                                "cornflowerblue",
+                               "navy"),
+                     breaks = c( "Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Alpine Renault",
+                                 "AlphaTauri Honda RBPT",
+                                 "Alfa Romeo Ferrari", 
+                                 "Aston Martin Aramco Mercedes",
+                                 "McLaren Mercedes",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing Honda RBPT"))
+```
+
+
+In the figure below, I plot each driver's standardized qualifying time for 2023 (standardized to a given circuit). In 2023, Ferrari had a rapid qualifying pace, with both drivers consistently putting up very fast times. Charles LeClerc and Carlos Sainz took pole position 5 and 2 times, respectively. Despite this strong qualifying pace by Ferrari, Max Verstappen still managed to secure 12 pole positions for Red Bull and Sergio Perez collected another 2.  
+
+
+```{r, warning=F, message=F, fig.align='center'}
+qualifying_allyears %>%
+  filter(!is.na(Q_secs),
+         Year == 2023) %>%
+  group_by(Race) %>%
+  mutate(track_mean = mean(Q_secs, na.rm = T),
+         Time_std_track = Q_secs - track_mean) %>% 
+  ungroup() %>% 
+  group_by(Driver) %>% 
+  mutate(driver_n = n(),
+         mean = mean(Time_std_track, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::filter(driver_n > 15) %>% 
+  ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+  geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+  geom_hline(yintercept = seq(23, 1, -2), col = 'grey', size = 3, alpha = 0.15) +
+  theme_bw() +
+  labs(x = 'Standardized Qualifying Time (secs)',
+       y = 'Driver',
+       title = 'Standardized Qualifying Time',
+       subtitle = '2023',
+       caption = '*Times are subtracted from the average time for each Grand Prix') +
+  geom_vline(xintercept = 0, col = 'red') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  xlim(-5, 10)
+```
+
+
+### 2022
+
+Charles Leclerc had the most most poles in 2022 (9), followed my Max Verstappen with 7. Some could argue that the Ferrari car was more suited for qualifying pace, but it's difficult to definitely say the Ferrari was consistently the faster car over 1 lap. Leclerc and Verstappen both out-qualified their teammates by a wide margin (9-3 in favor of LeClerc and 7-1 in favor of Varstappen). Leclerc's worst performance was 15th in Canada, while Verstappen's worst qualifying was 10th in Hungary. Additionally, Verstappen made it to Q3 in every weekend of the season. 
+
+While the vast majority of the drivers on the grid were not in serious contention for poles, some drivers clearly outperformed their teammates in 2022. For instance, Alex Albon out-qualified teammate Nicholas Latifi by a margin of 19-2. 
+
+
+```{r, warning=F, message=F, fig.align='center', fig.height = 10, fig.width = 8}
+quali2022 <- qualifying_scraper(2022)
+
+quali2022 %>%
+  ungroup() %>%
+  dplyr::select(Race, Position, Car, Driver) %>%
+  mutate(Position = as.integer(Position),
+         Position = ifelse(is.na(Position), 21, Position)) %>% 
+  group_by(Car, Race) %>% 
+  arrange(Driver) %>% 
+  mutate(driver_num = 1:n()) %>% 
+  pivot_wider(names_from = 'driver_num', values_from = c('Driver', 'Position')) %>%
+  mutate(best_qualifier = ifelse(Position_1 < Position_2, Driver_1, Driver_2)) %>%
+  ungroup() %>%
+  group_by(Car) %>%
+  count(best_qualifier) %>%
+  mutate(percentage = n / sum(n)) %>%
+  filter(!is.na(best_qualifier)) %>%  
+  ggplot(aes(y = fct_reorder(best_qualifier, Car), x = percentage, fill = Car)) +
+  geom_bar(stat = 'identity', position = 'dodge', alpha = 0.5, col = 'black') +
+  theme_bw() +
+  scale_x_continuous(labels = scales::percent_format()) +
+  facet_wrap(~ factor(Car,
+                      levels = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Alpine Renault",
+                                 "AlphaTauri RBPT",
+                                 "Alfa Romeo Ferrari", 
+                                 "Aston Martin Aramco Mercedes",
+                                 "McLaren Mercedes",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing RBPT")),
+                      ncol = 1, strip.position="top", scales = 'free_y') +
+  labs(y = 'Driver',
+       x = 'Season-long Qualifying Win Proportion',
+       title = 'Intra-team Qualifying Battles',
+       subtitle = '2022') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  scale_fill_manual(values = c("red", 
+                                "cyan3",  
+                                "black", 
+                                "blue",
+                               "darkslateblue", 
+                                "darkred",  
+                                "darkseagreen4", 
+                                "darkorange", 
+                                "cornflowerblue",
+                               "navy"),
+                     breaks = c( "Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Alpine Renault",
+                                 "AlphaTauri RBPT",
+                                 "Alfa Romeo Ferrari", 
+                                 "Aston Martin Aramco Mercedes",
+                                 "McLaren Mercedes",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing RBPT"))
+```
+
+It's pretty clear that both LeClerc and Verstappen stood apart from any other driver in 2022. 
+
+```{r, warning=F, message=F, fig.align='center'}
+qualifying_allyears %>%
+  filter(!is.na(Q_secs),
+         Year == 2022) %>%
+  group_by(Race) %>%
+  mutate(track_mean = mean(Q_secs, na.rm = T),
+         Time_std_track = Q_secs - track_mean) %>% 
+  ungroup() %>% 
+  group_by(Driver) %>% 
+  mutate(driver_n = n(),
+         mean = mean(Time_std_track, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::filter(driver_n > 15) %>% 
+  ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+  geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+  geom_hline(yintercept = seq(37, 1, -2), col = 'grey', size = 3, alpha = 0.15) +
+  theme_bw() +
+  labs(x = 'Standardized Qualifying Time (secs)',
+       y = 'Driver',
+       title = 'Standardized Qualifying Time',
+       subtitle = '2022',
+       caption = '*Times are subtracted from the average time for each Grand Prix') +
+  geom_vline(xintercept = 0, col = 'red') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  xlim(-5, 10)
+```
+
+
+### 2021
+
+During 2021, some head-to-head battles were particularly lop-sided. Pierre Gasly out-qualified Yuki Tsunoda in 21 out of 22 races, while Verstappen out-qualified Perez in 20 out of 22. 
+
+
+```{r, warning=F, message=F, fig.align='center', fig.height = 10, fig.width = 8}
+
+quali2021 <- qualifying_scraper(2021)
+
+quali2021 %>%
+  ungroup() %>%
+  dplyr::select(Race, Position, Car, Driver) %>%
+  mutate(Position = as.integer(Position),
+         Position = ifelse(is.na(Position), 21, Position)) %>% 
+  group_by(Car, Race) %>% 
+  arrange(Driver) %>% 
+  mutate(driver_num = 1:n()) %>% 
+  pivot_wider(names_from = 'driver_num', values_from = c('Driver', 'Position')) %>%
+  mutate(best_qualifier = ifelse(Position_1 < Position_2, Driver_1, Driver_2)) %>%
+  ungroup() %>%
+  group_by(Car) %>%
+  count(best_qualifier) %>%
+  mutate(percentage = n / sum(n)) %>%
+  filter(!is.na(best_qualifier)) %>%
+  ggplot(aes(y = fct_reorder(best_qualifier, Car), x = percentage, fill = Car)) +
+  geom_bar(stat = 'identity', position = 'dodge', alpha = 0.5, col = 'black') +
+  theme_bw() +
+  scale_x_continuous(labels = scales::percent_format()) +
+  facet_wrap(~ factor(Car,
+                      levels = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Alpine Renault",
+                                 "AlphaTauri Honda",
+                                 "Alfa Romeo Racing Ferrari", 
+                                 "Aston Martin Mercedes",
+                                 "McLaren Mercedes",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing Honda")), ncol = 1, strip.position="top", scales = 'free_y') +
+  labs(y = 'Driver',
+       x = 'Season-long Qualifying Win Proportion',
+       title = 'Intra-team Qualifying Battles',
+       subtitle = '2021') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  scale_fill_manual(values = c("red", 
+                                "cyan3",  
+                                "black", 
+                                "blue",
+                               "darkslateblue", 
+                                "darkred",  
+                                "darkseagreen4", 
+                                "darkorange", 
+                                "cornflowerblue",
+                               "navy"),
+                     breaks = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Alpine Renault",
+                                 "AlphaTauri Honda",
+                                 "Alfa Romeo Racing Ferrari", 
+                                 "Aston Martin Mercedes",
+                                 "McLaren Mercedes",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing Honda"))
+```
+
+Max Verstappen (10) and Lewis Hamilton (5) took 15 of the 22 possible poles in 2021. In fact, Red Bull and Mercedes combined to take all but 3 of the 2021 pole positions. 
+
+
+```{r, warning=F, message=F, fig.align='center'}
+qualifying_allyears %>%
+  filter(!is.na(Q_secs),
+         Year == 2021) %>%
+  group_by(Race) %>%
+  mutate(track_mean = mean(Q_secs, na.rm = T),
+         Time_std_track = Q_secs - track_mean) %>% 
+  ungroup() %>% 
+  group_by(Driver) %>% 
+  mutate(driver_n = n(),
+         mean = mean(Time_std_track, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::filter(driver_n > 15) %>% 
+  ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+  geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+  geom_hline(yintercept = seq(37, 1, -2), col = 'grey', size = 3, alpha = 0.15) +
+  theme_bw() +
+  labs(x = 'Standardized Qualifying Time (secs)',
+       y = 'Driver',
+       title = 'Standardized Qualifying Time',
+       subtitle = '2021',
+       caption = '*Times are subtracted from the average time for each Grand Prix') +
+  geom_vline(xintercept = 0, col = 'red') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  xlim(-5, 10)
+```
+
+
+
+
+### 2020
+
+Mercedes dominated the COVID-shortened 2020 season, winning all but two poles.  Lance Stroll took his first career pole during a rainy qualifying session at the Turkish Grand Prix. In the final Grand Prix of the year, Verstappen qualified on pole with the only car *not* powered by a Mercedes engine in 2020. 
+
+```{r, warning=F, message=F, fig.align='center', fig.height = 10, fig.width = 8}
+
+quali2020 <- qualifying_scraper(2020)
+
+quali2020 %>%
+  ungroup() %>%
+  dplyr::select(Race, Position, Car, Driver) %>%
+  mutate(Position = as.integer(Position),
+         Position = ifelse(is.na(Position), 21, Position)) %>% 
+  group_by(Car, Race) %>% 
+  arrange(Driver) %>% 
+  mutate(driver_num = 1:n()) %>% 
+  pivot_wider(names_from = 'driver_num', values_from = c('Driver', 'Position')) %>%
+  mutate(best_qualifier = ifelse(Position_1 < Position_2, Driver_1, Driver_2)) %>%
+  ungroup() %>%
+  group_by(Car) %>%
+  count(best_qualifier) %>%
+  mutate(percentage = n / sum(n)) %>%
+  filter(!is.na(best_qualifier)) %>%
+  ggplot(aes(y = fct_reorder(best_qualifier, Car), x = percentage, fill = Car)) +
+  geom_bar(stat = 'identity', position = 'dodge', alpha = 0.5, col = 'black') +
+  theme_bw() +
+  scale_x_continuous(labels = scales::percent_format()) +
+  facet_wrap(~ factor(Car,
+                      levels = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Renault",
+                                 "AlphaTauri Honda",
+                                 "Alfa Romeo Racing Ferrari", 
+                                 "Racing Point BWT Mercedes",
+                                 "McLaren Renault",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing Honda")), ncol = 1, strip.position="top", scales = 'free_y') +
+  labs(y = 'Driver',
+       x = 'Season-long Qualifying Win Proportion',
+       title = 'Intra-team Qualifying Battles',
+       subtitle = '2020') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  scale_fill_manual(values = c("red", 
+                                "cyan3",  
+                                "black", 
+                                "yellow",
+                               "darkslateblue", 
+                                "darkred",  
+                                "pink", 
+                                "darkorange", 
+                                "cornflowerblue",
+                               "navy"),
+                     breaks = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Renault",
+                                 "AlphaTauri Honda",
+                                 "Alfa Romeo Racing Ferrari", 
+                                 "Racing Point BWT Mercedes",
+                                 "McLaren Renault",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing Honda"))
+```
+
+
+And, here's a look at 2020's standardized qualifying times. 
+
+```{r, warning=F, message=F, fig.align='center'}
+qualifying_allyears %>%
+  filter(!is.na(Q_secs),
+         Year == 2020) %>%
+  group_by(Race) %>%
+  mutate(track_mean = mean(Q_secs, na.rm = T),
+         Time_std_track = Q_secs - track_mean) %>% 
+  ungroup() %>% 
+  group_by(Driver) %>% 
+  mutate(driver_n = n(),
+         mean = mean(Time_std_track, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::filter(driver_n > 15) %>% 
+  ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+  geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+  geom_hline(yintercept = seq(37, 1, -2), col = 'grey', size = 3, alpha = 0.15) +
+  theme_bw() +
+  labs(x = 'Standardized Qualifying Time (secs)',
+       y = 'Driver',
+       title = 'Standardized Qualifying Time',
+       subtitle = '2020',
+       caption = '*Times are subtracted from the average time for each Grand Prix') +
+  geom_vline(xintercept = 0, col = 'red') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  xlim(-5, 10)
+```
+
+
+
+
+### 2019
+
+Qualifying during 2019 was quite close between Mercedes (10 poles) and Ferrari (9 poles). Charles LeClerc qualified on pole 7 times, while Valterri Bottas and Lewis Hamilton both finished with 5 pole positions each. 
+
+```{r, warning=F, message=F, fig.align='center', fig.height = 10, fig.width = 8}
+
+quali2019 <- qualifying_scraper(2019)
+
+quali2019 %>%
+  ungroup() %>%
+  dplyr::select(Race, Position, Car, Driver) %>%
+  mutate(Position = as.integer(Position),
+         Position = ifelse(is.na(Position), 21, Position)) %>% 
+  group_by(Car, Race) %>% 
+  arrange(Driver) %>% 
+  mutate(driver_num = 1:n()) %>% 
+  pivot_wider(names_from = 'driver_num', values_from = c('Driver', 'Position')) %>%
+  mutate(best_qualifier = ifelse(Position_1 < Position_2, Driver_1, Driver_2)) %>%
+  ungroup() %>%
+  group_by(Car) %>%
+  count(best_qualifier) %>%
+  mutate(percentage = n / sum(n)) %>%
+  filter(!is.na(best_qualifier)) %>%
+  ggplot(aes(y = fct_reorder(best_qualifier, Car), x = percentage, fill = Car)) +
+  geom_bar(stat = 'identity', position = 'dodge', alpha = 0.5, col = 'black') +
+  theme_bw() +
+  scale_x_continuous(labels = scales::percent_format()) +
+  facet_wrap(~ factor(Car,
+                      levels = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Renault",
+                                 "Scuderia Toro Rosso Honda",
+                                 "Alfa Romeo Racing Ferrari", 
+                                 "Racing Point BWT Mercedes",
+                                 "McLaren Renault",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing Honda")), ncol = 1, strip.position="top", scales = 'free_y') +
+  labs(y = 'Driver',
+       x = 'Season-long Qualifying Win Proportion',
+       title = 'Intra-team Qualifying Battles',
+       subtitle = '2019') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  scale_fill_manual(values = c("red", 
+                                "cyan3",  
+                                "black", 
+                                "yellow",
+                               "darkslateblue", 
+                                "darkred",  
+                                "pink", 
+                                "darkorange", 
+                                "cornflowerblue",
+                               "navy"),
+                     breaks = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Renault",
+                                 "AlphaTauri Honda",
+                                 "Alfa Romeo Racing Ferrari", 
+                                 "Racing Point BWT Mercedes",
+                                 "McLaren Renault",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing Honda"))
+```
+
+
+When we look at the standardized qualifying times in 2019, five drivers are clearly faster than the rest of the grid: both Mercedes drivers, both Ferrari drivers, and Max Verstappen. 
+
+```{r, warning=F, message=F, fig.align='center'}
+qualifying_allyears %>%
+  filter(!is.na(Q_secs),
+         Year == 2019) %>%
+  group_by(Race) %>%
+  mutate(track_mean = mean(Q_secs, na.rm = T),
+         Time_std_track = Q_secs - track_mean) %>% 
+  ungroup() %>% 
+  group_by(Driver) %>% 
+  mutate(driver_n = n(),
+         mean = mean(Time_std_track, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::filter(driver_n > 15) %>% 
+  ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+  geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+  geom_hline(yintercept = seq(37, 1, -2), col = 'grey', size = 3, alpha = 0.15) +
+  theme_bw() +
+  labs(x = 'Standardized Qualifying Time (secs)',
+       y = 'Driver',
+       title = 'Standardized Qualifying Time',
+       subtitle = '2019',
+       caption = '*Times are subtracted from the average time for each Grand Prix') +
+  geom_vline(xintercept = 0, col = 'red') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  xlim(-5, 10)
+```
+
+
+
+### 2018
+
+During the 2018 season, Lewis Hamilton and Sebastian Vettel battled closely for pole positions. Here's a look at the intra-team battles. 
+
+```{r, warning=F, message=F, fig.align='center', fig.height = 10, fig.width = 8}
+
+quali2018 <- qualifying_scraper(2018)
+
+quali2018 %>%
+  ungroup() %>%
+  dplyr::select(Race, Position, Car, Driver) %>%
+  mutate(Position = as.integer(Position),
+         Position = ifelse(is.na(Position), 21, Position)) %>% 
+  group_by(Car, Race) %>% 
+  arrange(Driver) %>% 
+  mutate(driver_num = 1:n()) %>% 
+  pivot_wider(names_from = 'driver_num', values_from = c('Driver', 'Position')) %>%
+  mutate(best_qualifier = ifelse(Position_1 < Position_2, Driver_1, Driver_2)) %>%
+  ungroup() %>%
+  group_by(Car) %>%
+  count(best_qualifier) %>%
+  mutate(percentage = n / sum(n)) %>%
+  filter(!is.na(best_qualifier)) %>%
+  ggplot(aes(y = fct_reorder(best_qualifier, Car), x = percentage, fill = Car)) +
+  geom_bar(stat = 'identity', position = 'dodge', alpha = 0.5, col = 'black') +
+  theme_bw() +
+  scale_x_continuous(labels = scales::percent_format()) +
+  facet_wrap(~ factor(Car,
+                      levels = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Renault",
+                                 "Scuderia Toro Rosso Honda",
+                                 "Sauber Ferrari", 
+                                 "Force India Mercedes",
+                                 "McLaren Renault",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing TAG Heuer")), ncol = 1, strip.position="top", scales = 'free_y') +
+  labs(y = 'Driver',
+       x = 'Season-long Qualifying Win Proportion',
+       title = 'Intra-team Qualifying Battles',
+       subtitle = '2018') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  scale_fill_manual(values = c("red", 
+                                "cyan3",  
+                                "black", 
+                                "yellow",
+                               "darkslateblue", 
+                                "darkred",  
+                                "pink", 
+                                "darkorange", 
+                                "cornflowerblue",
+                               "navy"),
+                     breaks = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Renault",
+                                 "Scuderia Toro Rosso Honda",
+                                 "Sauber Ferrari", 
+                                 "Force India Mercedes",
+                                 "McLaren Renault",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing TAG Heuer"))
+```
+
+
+Every race during the 2018 season featured either Hamilton or Vettel on the front row of the grid. In fact, Hamilton and Vettel had average starting positions of 2.48 and 2.62, respectively. 
+
+```{r, warning=F, message=F, fig.align='center'}
+qualifying_allyears %>%
+  filter(!is.na(Q_secs),
+         Year == 2018) %>%
+  group_by(Race) %>%
+  mutate(track_mean = mean(Q_secs, na.rm = T),
+         Time_std_track = Q_secs - track_mean) %>% 
+  ungroup() %>% 
+  group_by(Driver) %>% 
+  mutate(driver_n = n(),
+         mean = mean(Time_std_track, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::filter(driver_n > 15) %>% 
+  ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+  geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+  geom_hline(yintercept = seq(37, 1, -2), col = 'grey', size = 3, alpha = 0.15) +
+  theme_bw() +
+  labs(x = 'Standardized Qualifying Time (secs)',
+       y = 'Driver',
+       title = 'Standardized Qualifying Time',
+       subtitle = '2018',
+       caption = '*Times are subtracted from the average time for each Grand Prix') +
+  geom_vline(xintercept = 0, col = 'red') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  xlim(-5, 10)
+```
+
+
+
+
+### 2017
+
+During 2017, only two teams (Mercedes and Ferrari) qualified on pole. Impressively, Hamilton achieved pole position in over half the races (11/ 20). 
+
+
+```{r, warning=F, message=F, fig.align='center', fig.height = 10, fig.width = 8}
+
+quali2017 <- qualifying_scraper(2017)
+
+quali2017 %>%
+  ungroup() %>%
+  dplyr::select(Race, Position, Car, Driver) %>%
+  mutate(Position = as.integer(Position),
+         Position = ifelse(is.na(Position), 21, Position)) %>% 
+  group_by(Car, Race) %>% 
+  arrange(Driver) %>% 
+  mutate(driver_num = 1:n()) %>% 
+  pivot_wider(names_from = 'driver_num', values_from = c('Driver', 'Position')) %>%
+  mutate(best_qualifier = ifelse(Position_1 < Position_2, Driver_1, Driver_2)) %>%
+  ungroup() %>%
+  group_by(Car) %>%
+  count(best_qualifier) %>%
+  mutate(percentage = n / sum(n)) %>%
+  filter(!is.na(best_qualifier)) %>%
+  ggplot(aes(y = fct_reorder(best_qualifier, Car), x = percentage, fill = Car)) +
+  geom_bar(stat = 'identity', position = 'dodge', alpha = 0.5, col = 'black') +
+  theme_bw() +
+  scale_x_continuous(labels = scales::percent_format()) +
+  facet_wrap(~ factor(Car,
+                      levels = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Renault",
+                                 "Toro Rosso",
+                                 "Sauber Ferrari", 
+                                 "Force India Mercedes",
+                                 "McLaren Honda",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing TAG Heuer")), ncol = 1, strip.position="top", scales = 'free_y') +
+  labs(y = 'Driver',
+       x = 'Season-long Qualifying Win Proportion',
+       title = 'Intra-team Qualifying Battles',
+       subtitle = '2017') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  scale_fill_manual(values = c("red", 
+                                "cyan3",  
+                                "black", 
+                                "yellow",
+                               "darkslateblue", 
+                                "darkred",  
+                                "pink", 
+                                "darkorange", 
+                                "cornflowerblue",
+                               "navy"),
+                     breaks = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Renault",
+                                 "Scuderia Toro Rosso Honda",
+                                 "Sauber Ferrari", 
+                                 "Force India Mercedes",
+                                 "McLaren Honda",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing TAG Heuer"))
+```
+
+
+Interestingly, only Bottas and Kimi Raikkonen reached Q3 in every Grand Prix of the season. 
+
+
+```{r, warning=F, message=F, fig.align='center'}
+qualifying_allyears %>%
+  filter(!is.na(Q_secs),
+         Year == 2017) %>%
+  group_by(Race) %>%
+  mutate(track_mean = mean(Q_secs, na.rm = T),
+         Time_std_track = Q_secs - track_mean) %>% 
+  ungroup() %>% 
+  group_by(Driver) %>% 
+  mutate(driver_n = n(),
+         mean = mean(Time_std_track, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::filter(driver_n > 15) %>% 
+  ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+  geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+  geom_hline(yintercept = seq(37, 1, -2), col = 'grey', size = 3, alpha = 0.15) +
+  theme_bw() +
+  labs(x = 'Standardized Qualifying Time (secs)',
+       y = 'Driver',
+       title = 'Standardized Qualifying Time',
+       subtitle = '2017',
+       caption = '*Times are subtracted from the average time for each Grand Prix') +
+  geom_vline(xintercept = 0, col = 'red') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  xlim(-5, 10)
+```
+
+
+
+
+### 2016
+
+2016 was an extremely tight competition in both races and qualifying for the two Mercedes drivers. Nico Rosberg qualified on the front row in every race of the season, while maintaining an average starting position of 1.62. However, Hamilton still managed to achieve pole more often: 12 poles vs 8 for Rosberg. 
+
+```{r, warning=F, message=F, fig.align='center', fig.height = 10, fig.width = 8}
+
+quali2016 <- qualifying_scraper(2016)
+
+quali2016 %>%
+  mutate(Car = str_replace(Car, "-", " ")) %>% 
+  ungroup() %>%
+  dplyr::select(Race, Position, Car, Driver) %>%
+  mutate(Position = as.integer(Position),
+         Position = ifelse(is.na(Position), 21, Position)) %>% 
+  group_by(Car, Race) %>% 
+  arrange(Driver) %>% 
+  mutate(driver_num = 1:n()) %>% 
+  pivot_wider(names_from = 'driver_num', values_from = c('Driver', 'Position')) %>%
+  mutate(best_qualifier = ifelse(Position_1 < Position_2, Driver_1, Driver_2)) %>%
+  ungroup() %>%
+  group_by(Car) %>%
+  count(best_qualifier) %>%
+  mutate(percentage = n / sum(n)) %>%
+  filter(!is.na(best_qualifier)) %>%
+  ggplot(aes(y = fct_reorder(best_qualifier, Car), x = percentage, fill = Car)) +
+  geom_bar(stat = 'identity', position = 'dodge', alpha = 0.5, col = 'black') +
+  theme_bw() +
+  scale_x_continuous(labels = scales::percent_format()) +
+  facet_wrap(~ factor(Car, 
+                      levels = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Renault",
+                                 "Toro Rosso Ferrari",
+                                 "Sauber Ferrari", 
+                                 "Force India Mercedes",
+                                 "McLaren Honda",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing TAG Heuer",
+                                "MRT Mercedes")),
+             ncol = 1, strip.position="top", scales = 'free_y') +
+  labs(y = 'Driver',
+       x = 'Season-long Qualifying Win Proportion',
+       title = 'Intra-team Qualifying Battles',
+       subtitle = '2016') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  scale_fill_manual(values = c("red", 
+                                "cyan3",  
+                                "black", 
+                                "yellow",
+                               "darkslateblue", 
+                                "darkred",  
+                                "pink", 
+                                "darkorange", 
+                                "cornflowerblue",
+                               "navy",
+                               "blue"),
+                     breaks = c("Ferrari",
+                                 "Mercedes",
+                                 "Haas Ferrari",
+                                 "Renault",
+                                 "Toro Rosso Ferrari",
+                                 "Sauber Ferrari", 
+                                 "Force India Mercedes",
+                                 "McLaren Honda",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing TAG Heuer",
+                                "MRT Mercedes"))
+```
+
+The only non-Mercedes pole of 2016 was Daniel Ricciardo in Monaco. 
+
+```{r, warning=F, message=F, fig.align='center'}
+qualifying_allyears %>%
+  filter(!is.na(Q_secs),
+         Year == 2016) %>%
+  group_by(Race) %>%
+  mutate(track_mean = mean(Q_secs, na.rm = T),
+         Time_std_track = Q_secs - track_mean) %>% 
+  ungroup() %>% 
+  group_by(Driver) %>% 
+  mutate(driver_n = n(),
+         mean = mean(Time_std_track, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::filter(driver_n > 15) %>% 
+  ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+  geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+  geom_hline(yintercept = seq(37, 1, -2), col = 'grey', size = 3, alpha = 0.15) +
+  theme_bw() +
+  labs(x = 'Standardized Qualifying Time (secs)',
+       y = 'Driver',
+       title = 'Standardized Qualifying Time',
+       subtitle = '2016',
+       caption = '*Times are subtracted from the average time for each Grand Prix') +
+  geom_vline(xintercept = 0, col = 'red') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  xlim(-5, 10)
+```
+
+
+
+### 2015
+
+Lewis Hamilton took 11 out of the first 12 poles of the 2015 season, while Rosberg won the final 6 poles. 
+
+```{r, warning=F, message=F, fig.align='center', fig.height = 10, fig.width = 8}
+
+quali2015 <- qualifying_scraper(2015)
+
+quali2015 %>%
+  mutate(Car = str_replace(Car, "-", " ")) %>% 
+  ungroup() %>%
+  dplyr::select(Race, Position, Car, Driver) %>%
+  mutate(Position = as.integer(Position),
+         Position = ifelse(is.na(Position), 21, Position)) %>% 
+  group_by(Car, Race) %>% 
+  arrange(Driver) %>% 
+  mutate(driver_num = 1:n()) %>% 
+  pivot_wider(names_from = 'driver_num', values_from = c('Driver', 'Position')) %>%
+  mutate(best_qualifier = ifelse(Position_1 < Position_2, Driver_1, Driver_2)) %>%
+  ungroup() %>%
+  group_by(Car) %>%
+  count(best_qualifier) %>%
+  mutate(percentage = n / sum(n)) %>%
+  filter(!is.na(best_qualifier)) %>%
+  ggplot(aes(y = fct_reorder(best_qualifier, Car), x = percentage, fill = Car)) +
+  geom_bar(stat = 'identity', position = 'dodge', alpha = 0.5, col = 'black') +
+  theme_bw() +
+  scale_x_continuous(labels = scales::percent_format()) +
+  facet_wrap(~ factor(Car, 
+                      levels =c("Ferrari",
+                                 "Mercedes",
+                                 "Lotus Mercedes",
+                                 "Marussia Ferrari",
+                                "STR Renault",
+                                 "Sauber Ferrari", 
+                                 "Force India Mercedes",
+                                 "McLaren Honda",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing Renault")),
+             ncol = 1, strip.position="top", scales = 'free_y') +
+  labs(y = 'Driver',
+       x = 'Season-long Qualifying Win Proportion',
+       title = 'Intra-team Qualifying Battles',
+       subtitle = '2015') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  scale_fill_manual(values = c("red", 
+                                "cyan3",  
+                                "black", 
+                                "grey",
+                               "darkslateblue", 
+                                "darkred",  
+                                "pink", 
+                                "darkorange", 
+                                "cornflowerblue",
+                               "blue",
+                               "navy"),
+                     breaks = c("Ferrari",
+                                 "Mercedes",
+                                 "Lotus Mercedes",
+                                 "Marussia Ferrari",
+                                "STR Renault",
+                                 "Sauber Ferrari", 
+                                 "Force India Mercedes",
+                                 "McLaren Honda",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing Renault"))
+```
+
+
+Mercedes was absolutely dominant in qualifying and missed out on only 1 pole to Sebastian Vettel in Singapore.  
+
+```{r, warning=F, message=F, fig.align='center'}
+qualifying_allyears %>%
+  filter(!is.na(Q_secs),
+         Year == 2015) %>%
+  group_by(Race) %>%
+  mutate(track_mean = mean(Q_secs, na.rm = T),
+         Time_std_track = Q_secs - track_mean) %>% 
+  ungroup() %>% 
+  group_by(Driver) %>% 
+  mutate(driver_n = n(),
+         mean = mean(Time_std_track, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::filter(driver_n > 15) %>% 
+  ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+  geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+  geom_hline(yintercept = seq(37, 1, -2), col = 'grey', size = 3, alpha = 0.15) +
+  theme_bw() +
+  labs(x = 'Standardized Qualifying Time (secs)',
+       y = 'Driver',
+       title = 'Standardized Qualifying Time',
+       subtitle = '2015',
+       caption = '*Times are subtracted from the average time for each Grand Prix') +
+  geom_vline(xintercept = 0, col = 'red') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  xlim(-5, 10)
+```
+
+
+
+### 2014
+
+The very consistent Nico Rosberg averaged a 1.68 starting position, won 11 poles, and out-qualified Lewis Hamilton 12:7 in the 2014 season. 
+
+
+
+```{r, warning=F, message=F, fig.align='center', fig.height = 10, fig.width = 8}
+
+quali2014 <- qualifying_scraper(2014)
+
+quali2014 %>%
+  mutate(Car = str_replace(Car, "-", " ")) %>% 
+  ungroup() %>%
+  dplyr::select(Race, Position, Car, Driver) %>%
+  mutate(Position = as.integer(Position),
+         Position = ifelse(is.na(Position), 21, Position)) %>% 
+  group_by(Car, Race) %>% 
+  arrange(Driver) %>% 
+  mutate(driver_num = 1:n()) %>% 
+  pivot_wider(names_from = 'driver_num', values_from = c('Driver', 'Position')) %>%
+  mutate(best_qualifier = ifelse(Position_1 < Position_2, Driver_1, Driver_2)) %>%
+  ungroup() %>%
+  group_by(Car) %>%
+  count(best_qualifier) %>%
+  mutate(percentage = n / sum(n)) %>%
+  filter(!is.na(best_qualifier)) %>%
+  ggplot(aes(y = fct_reorder(best_qualifier, Car), x = percentage, fill = Car)) +
+  geom_bar(stat = 'identity', position = 'dodge', alpha = 0.5, col = 'black') +
+  theme_bw() +
+  scale_x_continuous(labels = scales::percent_format()) +
+  facet_wrap(~ factor(Car, 
+                      levels =c("Ferrari",
+                                 "Mercedes",
+                                 "Lotus Renault",
+                                 "Marussia Ferrari",
+                                "STR Renault",
+                                 "Sauber Ferrari", 
+                                 "Force India Mercedes",
+                                 "McLaren Mercedes",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing Renault",
+                                "Caterham Renault")),
+             ncol = 1, strip.position="top", scales = 'free_y') +
+  labs(y = 'Driver',
+       x = 'Season-long Qualifying Win Proportion',
+       title = 'Intra-team Qualifying Battles',
+       subtitle = '2015') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  scale_fill_manual(values = c("red", 
+                                "cyan3",  
+                                "black", 
+                                "grey",
+                               "darkslateblue", 
+                                "darkred",  
+                                "pink", 
+                                "darkorange", 
+                                "cornflowerblue",
+                                "blue",
+                               "navy",
+                               "seagreen"),
+                     breaks = c("Ferrari",
+                                 "Mercedes",
+                                 "Lotus Mercedes",
+                                 "Marussia Ferrari",
+                                "STR Renault",
+                                 "Sauber Ferrari", 
+                                 "Force India Mercedes",
+                                 "McLaren Honda",
+                                 "Williams Mercedes",
+                                 "Red Bull Racing Renault",
+                                "Caterham Renault"))
+```
+
+
+Mercedes power units claimed every pole of this inaugural season for the turbo-hybrid era. 
+
+```{r, warning=F, message=F, fig.align='center'}
+qualifying_allyears %>%
+  filter(!is.na(Q_secs),
+         Year == 2014) %>%
+  group_by(Race) %>%
+  mutate(track_mean = mean(Q_secs, na.rm = T),
+         Time_std_track = Q_secs - track_mean) %>% 
+  ungroup() %>% 
+  group_by(Driver) %>% 
+  mutate(driver_n = n(),
+         mean = mean(Time_std_track, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::filter(driver_n > 15) %>% 
+  ggplot(aes(Time_std_track, y = fct_reorder(Driver, desc(mean)))) +
+  geom_point(position = position_jitter(w = 0, h = 0.1), alpha = 0.5) +
+  geom_hline(yintercept = seq(37, 1, -2), col = 'grey', size = 3, alpha = 0.15) +
+  theme_bw() +
+  labs(x = 'Standardized Qualifying Time (secs)',
+       y = 'Driver',
+       title = 'Standardized Qualifying Time',
+       subtitle = '2014',
+       caption = '*Times are subtracted from the average time for each Grand Prix') +
+  geom_vline(xintercept = 0, col = 'red') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0)) +
+  xlim(-5, 10)
+```
+
+
+
+
+
+### Next Chapter
+
+In the next chapter, we will explore the relationship between qualifying position and race placing. 
+
+
+\newpage

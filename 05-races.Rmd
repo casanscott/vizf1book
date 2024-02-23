@@ -1,0 +1,2810 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+# Modeling Race Results
+
+What determines success in a Grand Prix? Obviously, a multitude of factors do, but which ones specifically? And how much? These type of questions were essentially the motivation behind me writing this book. I was new to this sport, and had lots of questions. As a casual fan of Daily Fantasy Sports (DFS), I was curious to know what variables determine final placing in a race. Assuming something measurable does influence final placing, I wanted to build a model to describe the relationship (inferential model)and make predictions (predictive model). This chapter documents my modeling approach.
+
+
+## Starting Position vs Finish Position
+
+Let's begin with a mostly uncontroversial statement: 
+
+All other factors held constant, **it is best to start the race in first place**!
+
+How much does starting position influence a driver's finishing place? Throughout this chapter, we will explore data and build models to answer this question. 
+
+\newpage
+
+<br>
+<br>
+
+Using the **drs** package, we can pull all starting grid positions and Grand Prix finishing places for each race from 2014 to 2023. 
+
+```{r, include = F, message = F, warning = F}
+library(tidyverse)
+library(broom)
+library(ggtext)
+library(ciTools)
+library(merTools)
+library(ggrepel)
+library(emmeans)
+library(gghighlight)
+library(ggtext)
+library(ggthemes)
+
+# Race Results
+races_allyears <- read.csv("races_allyears.csv")
+
+# Grid Results
+grid_allyears <- read.csv("grid_allyears.csv")
+
+
+# Create title color coder function
+title_color_coder <- function(leading_regular_text, label_1, color_1, middle_regular_text, label_2, color_2, trailing_regular_text){
+
+  title_text <- paste0(leading_regular_text, "<span style='color:", color_1,";'>",label_1,"</span>", middle_regular_text, "<span style='color:", color_2,";'>", label_2, "</span>", trailing_regular_text)
+
+  return(title_text)
+
+}
+
+```
+
+
+
+```{r, eval=F}
+
+# Pull Race Data
+races2023 <- race_result_scraper(2023)
+races2022 <- race_result_scraper(2022)
+races2021 <- race_result_scraper(2021)
+races2020 <- race_result_scraper(2020)
+races2019 <- race_result_scraper(2019)
+races2018 <- race_result_scraper(2018)
+races2017 <- race_result_scraper(2017)
+races2016 <- race_result_scraper(2016)
+races2015 <- race_result_scraper(2015)
+races2014 <- race_result_scraper(2014)
+
+# Combine all race data
+races_allyears <- rbind(races2023,
+                             races2022,
+                             races2021, 
+                             races2020,
+                             races2019,
+                             races2018,
+                             races2017,
+                             races2016,
+                             races2015,
+                             races2014)
+
+# Pull Starting Grid Data
+grid2023 <- starting_grid_scraper(2023)
+grid2022 <- starting_grid_scraper(2022)
+grid2021 <- starting_grid_scraper(2021)
+grid2020 <- starting_grid_scraper(2020)
+grid2019 <- starting_grid_scraper(2019)
+grid2018 <- starting_grid_scraper(2018)
+grid2017 <- starting_grid_scraper(2017)
+grid2016 <- starting_grid_scraper(2016)
+grid2015 <- starting_grid_scraper(2015)
+grid2014 <- starting_grid_scraper(2014)
+
+# Combine all starting grid data
+grid_allyears <- rbind(grid2023,
+                             grid2022,
+                             grid2021, 
+                             grid2020,
+                             grid2019,
+                             grid2018,
+                             grid2017,
+                             grid2016,
+                             grid2015,
+                             grid2014)
+
+```
+
+
+
+In the code above, I scrape results by year and bind all years together. Next, I'll merge the starting grid positions with the race results for all Grands Prix from 2014 to 2023. 
+
+```{r, warning=F, message=F}
+## Merge practice and qualifying data
+grids_and_races <- races_allyears %>%
+  left_join(grid_allyears %>% dplyr::select(Driver, Race, Circuit, Year, Position, Time_secs),
+            by = c('Driver', 'Race', 'Circuit', 'Year'),
+            suffix = c("_race", "_grid")) %>%
+  filter(!Position_race %in% c("NC", "DQ"),
+         !is.na(Position_race),
+         !is.na(Position_grid)) %>% 
+  mutate(Position_race = as.numeric(Position_race), 
+         Position_grid = as.numeric(Position_grid)) 
+```
+
+
+As a sanity check, let's take an initial look at our data. Does the data *appear* to support our hypothesis?
+
+Recall our hypothesis: 
+
+*It is best to start the race in 1st place.* 
+
+Or, we can use perhaps a more versatile version of our hypothesis: 
+
+*Starting grid position is positively correlated to finishing position.*
+
+Below, I'll plot starting grid position vs finishing position for each driver over this ten year period. I'll include a best-fit line to highlight the overall relationship. 
+
+*Note: I jitter the data using `position_jitter()`.*
+
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+
+grids_and_races %>%
+  ggplot(aes(Position_grid, Position_race)) +
+  geom_point(position = position_jitter(), alpha = 0.25) +
+  geom_line(stat = 'smooth', se = F, method = 'lm', col = 'red',
+              formula = y ~ 0 + x, size = 1, alpha = 0.75) +
+  theme_bw() +
+  labs(x  = 'Starting Grid Position',
+       y = 'Finishing Position',
+       title = 'Starting Position vs Finish Position',
+       subtitle = 'All Grands Prix: (2014 - 2023)') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+Clearly, there's a linear relationship that supports our hypothesis. In chapter 4, we used a linear regression model to estimate the relationship between practice times and qualifying times. Linear regression is *typically* a fine choice to model a continuous response variable, so long as the assumptions of the model are met. There are four primary assumptions associated with simple linear regression (linear regression with only one predictor variable):
+
+* **Linearity**: The relationship between the predictor variable and the *mean* of the response variable is linear.
+* **Homoscedasticity**: The variance of a residual is the same for any value of the predictor variable.
+* **Independence**: Observations are independent of each other.
+* **Normality**: For any fixed value of the predictor variable, the response variable is normally distributed.
+
+In the next section, I'll fit a simple linear regression model to this data. I will perform some diagnostic checks to ensure that we meet our assumptions. Spoiler alert: we don't!. 
+
+
+## Shortcomings of a simple linear regression model
+
+
+To start off, I'll fit the linear regression with the following code:
+
+
+```{r, warning = F, message = F}
+
+grid.lm <- lm(Position_race ~ 0 + Position_grid, data = grids_and_races)
+
+```
+
+
+We can use this model to make predictions for each starting position. The red line represents the predictions. Notice how the code below produces the same figure that we created above.  
+
+```{r, warning=F, message=F, fig.height= 8, fig.width= 10}
+
+# make predictions
+grid.lm.predictions <- predict(grid.lm, grids_and_races)
+
+# Plot data with predictions
+grids_and_races %>%
+  bind_cols(pred = grid.lm.predictions) %>%
+  ggplot(aes(Position_grid, Position_race)) +
+  geom_point(position = position_jitter(), alpha = 0.25) +
+  geom_line(aes(y = pred), col = 'red',
+            size = 1, alpha = 0.75) +
+  theme_bw() +
+  labs(x  = 'Starting Grid Position',
+       y = 'Finishing Position',
+       title = 'Starting Position vs Finish Position',
+       subtitle = 'All Grands Prix: (2014 - 2023)') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+Now, we can begin checking our assumptions for the simple linear regression model. 
+
+### Linearity
+
+The relationship between the predictor variable and the *mean* of the response variable should be linear. Judging by the graph above, it certainly *looks* like we meet this assumption. We can also use a test to check this assumption. One such test is the Ramsey Regression Equation Specification Error Test (RESET). 
+
+```{r, message = F, warning = F}
+library(lmtest)
+resettest(grid.lm)
+```
+
+The RESET performs a nested model comparison with the current model and the current model plus some polynomial terms. The results from this test on our model suggests that our model may be mis-specified. However, it is not recommended to begin thoughtlessly experimenting with additional terms. Let's continue checking the other assumptions of the linear regression model. 
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to test for linearity in R**
+:::
+
+
+The Ramsey Regression Equation Specification Error Test (RESET) can be used to detect specification errors in a linear model model. The RESET performs a nested model comparison between:
+
+1.  the current model and,
+2. the current model plus some polynomial terms
+
+The `resettest()` returns the result of an F-test. A significant result is *an indication that we need to further investigate the relationship between the predictors and the outcome.*
+
+
+For more information on checking for linearity and addressing mis-specified models, visit this link: https://sscc.wisc.edu/sscc/pubs/RegDiag-R/linearity.html
+
+::::
+
+<br>
+<br>
+
+
+
+### Homoscedasticity
+
+The variance of a residual should be constant for any value of the predictor variable.
+
+To check this, we can first use a visualization. I'll plot the residuals vs the starting grid positions for our model:
+
+```{r, warning = F, message = F}
+# Bind the residuals and plot residuals vs predictor levels
+grids_and_races %>%
+  filter(!is.na(Position_grid),
+         !is.na(Position_race)) %>% 
+  bind_cols(res = grid.lm$residuals) %>%
+  ggplot(aes(Position_grid, res)) +
+  geom_hline(yintercept = 0, col = 'red', alpha = 0.5) + 
+  geom_point(alpha = 0.25) +
+  theme_bw() +
+  labs(x  = 'Starting Grid Position',
+       y = 'Residual',
+       title = 'Starting Position vs Residuals') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+
+```
+
+This does not look good! We clearly have a pattern in our residual variance. Notice how the residuals steadily decline with starting grid position. Ideally, the residuals should be centered around 0 (the horizontal red line) with approximately equal variance (in both directions) across the plot. 
+
+
+
+We can use a statistical test to quantify this violation. The Non-Constant Error Variance Test  (ncvTest) is a useful test for the assumption of constant variance. Within the **car** package, there is a function called `ncvTest()` that will test whether the model demonstrates constant variance. I will use this function below:
+
+```{r, message = F, warning = F}
+library(car)
+
+ncvTest(grid.lm)
+```
+
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to test for Homoscedasticity in R**
+:::
+
+There are a few options available, depending on your data and model. Two of the most common functions that I use are: 
+
+
+* The **car** package includes the `ncvTest()` function that performs a Non-Constant Error Variance Test. 
+* the **lmtest** packages includes the `bptest()` function that performs the Breusch-Pagan test against heteroskedasticity.
+
+
+::::
+
+<br>
+<br>
+
+The results from this test suggest a pretty severe violation of homoscedasticity. 
+
+
+### Independence
+
+Observations should be *independent* of each other.
+
+
+The assumption of independence should be carefully investigated. However, merely using data visualizations or statistical tests is insufficient. A thorough discussion about statistical independence is outside of the scope of this book, but to learn more I recommend starting here:
+
+https://sscc.wisc.edu/sscc/pubs/RegDiag-R/independence.html
+
+
+### Normality
+
+For any fixed value of the predictor variable, the response variable should be normally distributed.
+
+One way to create a visual check for normality is by using a qq-plot. We can easily create a qq-plot in ggplot using the following code:
+
+```{r}
+ggplot() +
+  geom_qq(aes(sample = rstandard(grid.lm))) +
+  geom_abline(color = "red") +
+  coord_fixed() +
+  theme_bw()
+```
+
+Visually, there seems to be deviations at the upper and lower ends of our range. 
+
+The `ols_test_correlation()` function from the **olsrr** package tests the correlation between the observed residuals and expected residuals under normality. I'll run that test here: 
+
+
+```{r, message = F, warning = F}
+library(olsrr)
+
+ols_test_correlation(grid.lm)
+```
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**The olsrr package in R**
+:::
+
+If you are new to R, the **olsrr** package can be very helpful. It is built with the aim of helping those users who are building models but are new to the R language. 
+
+
+To learn more about the **olsrr** package, visit this link:
+
+https://cran.r-project.org/web/packages/olsrr/vignettes/residual_diagnostics.html
+
+
+::::
+
+<br>
+<br>
+
+
+That seems like a strong enough correlation, suggesting that the residuals are not normally distributed. But, let's dive even deeper. If we look at the distribution of residuals at each starting position, we can see clear deviations from normality. I will plot the distribution of residuals for each starting grid position below. Each *facet* contains data for a given starting grid position. Notice that the distributional shapes at the front (P1, P2, P3) and back of the grid (P20, P21, P22) deviate considerably from a normal distribution.
+
+<br>
+<br>
+
+```{r, warning = F, message = F, fig.height= 8, fig.width= 10}
+grids_and_races %>%
+  filter(!is.na(Position_grid),
+         !is.na(Position_race)) %>% 
+  bind_cols(res = grid.lm$residuals) %>%
+  ggplot(aes(res, y = ..density..)) +
+  geom_vline(xintercept = 0, col = 'red', alpha = 0.5) + 
+  geom_histogram(alpha = 0.5) +
+  theme_bw() +
+  labs(x  = 'Residual',
+       y = '',
+       title = 'Distribution of Residuals at each Starting Grid Position') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  facet_wrap(~ Position_grid, scales = 'free_y')
+```
+
+To make this even easier to see, we can overlay a theoretical normal distribution over these plots. 
+
+```{r, warning = F, message = F, fig.height= 8, fig.width= 10}
+library(ggh4x)
+library(fitdistrplus)
+
+grids_and_races %>%
+  filter(!is.na(Position_grid),
+         !is.na(Position_race)) %>% 
+  bind_cols(res = grid.lm$residuals) %>%
+  ggplot(aes(res, y = ..density..)) +
+  geom_vline(xintercept = 0, col = 'red', alpha = 0.5, size = 0.3) + 
+  geom_histogram(alpha = 0.5) +
+  theme_bw() +
+  labs(x  = 'Residual',
+       y = '',
+       title = 'Distribution of Residuals at each Starting Grid Position') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  stat_theodensity(aes(y = after_stat(density)), distri = 'norm') + 
+  facet_wrap(~ Position_grid, scales = 'free_y')
+```
+
+After seeing all of these figures and the results from the statistical tests, I feel strongly that our data does not meet the assumptions for the simple linear regression model. 
+
+
+<br>
+<br>
+
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**How to overlay a theoretical distribution in ggplot**
+:::
+
+The **ggh4x** package has lots of fantastic functions for plotting. One of my favorites is the `stat_theodensity()` function. This function can be useful for comparing histograms or kernel density estimates against a theoretical distribution.
+
+For more information on the function, visit this link:
+
+https://www.rdocumentation.org/packages/ggh4x/versions/0.2.1/topics/stat_theodensity
+
+The **ggh4x** package proviedes various *hacks* for ggplot. For more information on the package, visit this link:
+
+https://cran.r-project.org/web/packages/ggh4x/readme/README.html
+
+
+::::
+
+
+<br>
+<br>
+
+If we can not use a linear regression model, what model should we use? When your data fails to meet the assumptions for a linear regression, it is common to consider a generalized linear model (GLM) as an alternative. Without going into too much detail, the choice of a particular GLM depends on the characteristics of the response variable. In our data, the response variable is Grand Prix final classification position (a.k.a. *what place you finished the race in*). This variable is not *continuous*, but is rather quite special. We could treat it as an integer, but it actually possesses a very special characteristic: it is an ***ordered factor***, or ordinal variable. 
+
+
+An ordinal variable is a categorical factor in which the levels of that factor demonstrate an *ordering*. For example, taco salsa at a restaurant may be categorized as *mild*, *warm*, and *hot*.  Survey responses may include *strongly disagree*, *disagree*, *neutral*, *agree*, and *strongly agree*. This is no different in our data. P1 finishes ahead of P2, who finishes ahead of P3, and so on. This ordered nature of the response variable requires a different approach to modeling.  I'll discuss further in the next section!
+
+
+## Ordinal regression model
+
+Judging by our earlier plots at the beginning of this chapter, we can safely conclude that there is a pattern in the data; *starting and finishing positions are positively correlated*. However, we failed to meet the assumptions for a simple linear regression model. Luckily, there is a better suited model for this task: the *Ordinal regression model*. 
+
+Ordinal regression can be used to estimate the association between a predictor variable (or several) and an ordinal outcome (finishing position). Rather than predicting the finishing position explicitly, this model estimates the *odds* (and *probability*) of finishing in a particular position. For this reason, we would need to slightly modify our research question to:
+
+*What effect does starting grid position have on the probability of a finishing position in a Grand Prix?*
+
+
+Note: the odds of an outcome are the ratio of the probability that the outcome occurs to the probability that the outcome does not occur.
+
+$$ Odds = \frac{Pr(outcome \ occurs)}{Pr(outcome \ does \ not \ occur)} $$
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**What is an Ordinal Regression model?**
+:::
+
+An ordinal regression model estimates the probability of a given ordinal outcome, or a better outcome. Ordinal outcomes are ordered factors. In other words, an ordinal outcome is a categorical response variable that is ordered in some relevant way. For example, "Low/Medium/High" or "Bad/Good/Great" are both ordered factors with three levels. Finishing Place, "P1, P2, P3, etc.", is also an ordered factor. We can use an ordinal regression model to estimate the probability of a driver finishing in a given position (or better).
+
+A helpful introduction to ordinal regression models can be found here:
+
+https://towardsdatascience.com/implementing-and-interpreting-ordinal-logistic-regression-1ee699274cf5
+
+One of my favorite books that discusses ordinal regression models is *Modern Applied Regressions* by Jun Xu:
+
+https://a.co/d/dJgYJ5B
+
+
+Another great book that covers the topic is *Applications of Regression for Categorical Outcomes Using R*  by David Melamed and Long Doan:
+
+https://www.routledge.com/Applications-of-Regression-for-Categorical-Outcomes-Using-R/Melamed-Doan/p/book/9781032509518
+
+::::
+
+
+<br />
+<br />
+
+
+For a better understanding of ordinal regression models, I highly recommend the sources that I linked above. In my opinion, the best way to learn is through experimentation. So, I will go ahead and build an ordinal regression model, also known as a *proportional odds model*, to estimate the effect of starting grid position on the odds of a particular finishing position. This model will utilize all races across the ten year period (2014 to 2023). I removed DNFs (did not finish the race) from this data. In the code chunk below, I fit the model and print the summary output.  
+
+
+```{r, warning = F, message= F}
+library(VGAM)
+
+
+# fit the ordinal regression model
+overall_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races)
+
+# print summary of the model
+summary(overall_model)
+```
+
+
+
+How do I interpret these results? The interpretation can get a bit tedious. If you look at the bottom of the summary output, you will find an exponentiated coefficient for starting grid position (Position_grid = 0.7056819). We can interpret this value as: 
+
+*For each place improvement in starting grid position, the odds of that driver finishing the race in a better position (i.e. P1 vs P2 or P19 vs P20) is 0.29 (1 - 0.71) times higher (than the driver starting the race one position lower on the grid.*
+
+The interpretation of the coefficient is not super intuitive. It makes sense, but it takes some effort to sort out. 
+
+
+Another way to visualize this model's results is by making predictions with the model. Below, I'll simulate a starting grid, and predict the final placing for each starting grid position. These predictions are actually *probabilities* of each finishing position. For example, this model estimates the probability that the pole-sitter finishes the race in P1, P2, P3, etc. These probabilities will include a 95% confidence interval. 
+
+```{r}
+
+# Create a placeholder dataframe with all possible starting positions
+starting_grid = data.frame(Position_grid = 1:20)
+
+# Create a placeholder dataframe with names for predictions and standard errors. 
+placing_df <- data.frame(prob = rep('prob', 21)) %>%
+  mutate(y = 1:n()) %>%
+  unite(prob, prob, y, remove = F) %>%
+  mutate(se = rep('se', 21)) %>%
+  unite(se, se, y, remove = F)
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+predictions <- as.data.frame(predictvglm(overall_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(predictions) <- placing_df$prob
+
+# Extract the standard error for each prediction
+standard_errors <- as.data.frame(predictvglm(overall_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(standard_errors) <- placing_df$se
+
+## As an example, I'll select the predictions and standard error for: Probability(P1 finish | P1 starting grid)
+# Bind the predictions and standard errors together, and convert the odds to probabilities. 
+starting_grid_coef_finish1 <- starting_grid %>%
+  bind_cols(pr_1 = predictions$prob_1,
+            se_1 = standard_errors$se_1) %>%
+  mutate(pr = exp(pr_1),
+         lower = exp(pr_1 - se_1 * 1.96),
+         upper = exp(pr_1 + se_1 * 1.96)) %>%
+  mutate( pr = pr / (1 + pr),
+          lower = lower / (1 + lower),
+           upper = upper / (1 + upper))
+```
+
+
+**What is the probability of winning a race?**
+
+Now that the predictions are made, I will use `ggplot()` to plot the probability of winning a race given each potential starting position, *P(P1 finish | a starting grid position)*: 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+starting_grid_coef_finish1 %>%
+  ggplot(aes(Position_grid, y = pr, ymin = lower, ymax = upper)) +
+  geom_pointrange() +
+  theme_bw() +
+  labs( y = 'Probability of finishing P1',
+        x = 'Starting Grid Position',
+       title = 'Ordinal Regression Model Predictions',
+       subtitle = 'All Grands Prix: (2014 - 2023)') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+
+If starting from P1, a driver has a 27% chance of winning the race, on average. If starting from P2, but still on the front row, a driver's chance of winning drops to 21%. 
+
+**What is the probability of finishing on the podium?**
+
+We can use the same approach to estimate the probability of a podium given a starting grid position.
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+## As an example, I'll select the predictions and standard error for: Probability(Podium | a starting grid)
+# Bind the predictions and standard errors together, and convert the odds to probabilities. 
+starting_grid_coef_podium <- starting_grid %>%
+  bind_cols(pr_1 = predictions$prob_3,
+            se_1 = standard_errors$se_3) %>%
+  mutate(pr = exp(pr_1),
+         lower = exp(pr_1 - se_1 * 1.96),
+         upper = exp(pr_1 + se_1 * 1.96)) %>%
+  mutate( pr = pr / (1 + pr),
+          lower = lower / (1 + lower),
+           upper = upper / (1 + upper))
+
+starting_grid_coef_podium %>%
+  ggplot(aes(Position_grid, y = pr, ymin = lower, ymax = upper)) +
+  geom_pointrange() +
+  theme_bw() +
+  labs( y = 'Probability of a podium',
+        x = 'Starting Grid Position',
+       title = 'Ordinal Regression Model Predictions',
+       subtitle = 'All Grands Prix: (2014 - 2023)') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+
+A driver starting from P1 has a 66% chance of finishing on the podium. I like those odds! A driver starting from P5 still has a 1 in 3 chance of finishing on the podium. 
+
+In my opinion, probabilities are more intuitive than odds. For that reason, I will use probabilities throughout the rest of the chapter. 
+
+
+### Prediction Grid
+
+What if we wanted to know the probability of all finishing positions given each starting position? We can use a similar approach. I will plot the model predictions in a heat map below. Each tile represents the: 
+*Probability(a finishing position | a starting grid position)*.
+
+To create this plot, I first need to re-shape the dataframe to a long format indexed by starting and finish position. I will also add a new column that contains the discrete probability of a given finish. Because the proportional odds model output is converted to a probabilistic statement like *Probability(finishing P3 or better | a starting position)*, the discrete probability column will give a statement like *Probability(finishing P3 | a starting position)*. 
+
+```{r, warning = F, message = F}
+
+
+preds_se_full <- predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+```
+
+Now that the data is re-shaped, I'll plot the discrete and cumulative probability heatmaps. 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+
+# Plot Discrete Probability heatmap
+preds_se_full %>%
+  ggplot(aes(starting, placing, fill = discrete_prob)) +
+  geom_tile(col = 'white', size = 0.1) +
+  theme_tufte(base_family="Helvetica") +
+  scale_fill_viridis_c(option = 'magma') +
+  coord_equal() +
+  theme(axis.ticks=element_blank()) +
+  labs(x = 'Starting Grid',
+       y = 'Final Placing',
+       fill = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n])) +
+  scale_x_continuous(breaks = c(1:20,1)) +
+  scale_y_continuous(breaks = c(1:21,1)) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Plot Cumulative Probability heatmap 
+preds_se_full %>%
+  ggplot(aes(starting, placing, fill = prob)) +
+  geom_tile(col = 'white', size = 0.1) +
+  theme_tufte(base_family="Helvetica") +
+  scale_fill_viridis_c(option = 'magma') +
+  coord_equal() +
+  theme(axis.ticks=element_blank()) +
+  labs(x = 'Starting Grid',
+       y = 'Final Placing',
+       fill = 'Probability',
+       title = expression(Probability~of~finishing~P[n]~or~better)) +
+  scale_x_continuous(breaks = c(1:20,1)) +
+  scale_y_continuous(breaks = c(1:21,1)) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+The cumulative probability plot is helpful, but the discrete probability plot is a bit tough to follow. Let's try plotting this information a different way. Rather than using a heat map, I will combine the probabilities into distributions using the code below. 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'cornflowerblue') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'All races: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+
+The plot above shows the probability of finishing at any position given where the driver starts the race. In my opinion, this is a more interpretable representation of the data. You can track the shift in distributions as you move down the grid.  It is important to keep in mind what data this model is built on. These predictions are generated solely from starting position. But, we know there is much more involved in where you finish. Otherwise, why even run the race?! Nonetheless, this data can be used to answer our hypothesis directly and it establishes a nice baseline to build upon. In the next section, I will try expanding this model to include additional variables. 
+
+
+
+### Yearly Differences in Ordinal Regression Results
+
+Does this relationship between starting and finishing position vary over time? In the section, I will explore yearly differences in ordinal regression results. I will start by looking at changes occurring in 2022. After a forty-year ban, **ground effect** returned to Formula 1 in 2022. The goal for a Formula 1 design team is to optimize ground effect so that the bottom of the car generates low pressure, which will *suck* the car to the track. These new regulations in 2022 aimed to enable cars to follow more closely and overtake more easily. Theoretically, this change should decrease the correlation between starting position and finishing position. Is this represented in the data? Let's model it and see!
+
+
+I will fit an ordinal regression model for each year from 2014 to 2023. I will start with the pre-ground effect era. Here's a model for each year from 2014 through 2021, which I will refer to as the *turbo-hybrid era*. 
+
+```{r}
+model14 <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Year == 2014))
+
+model15 <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Year == 2015))
+
+model16 <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Year == 2016))
+
+model17 <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Year == 2017))
+
+model18 <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Year == 2018))
+
+model19 <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Year == 2019))
+
+model20 <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Year == 2020))
+
+model21 <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Year == 2021))
+```
+
+
+
+```{r}
+#exponentiate coefficient
+turbo_hybrid_coefs <- data.frame(Position_grid = rbind(summary(model14)@post$expcoeffs,
+                                                       summary(model15)@post$expcoeffs,
+                                                       summary(model16)@post$expcoeffs,
+                                                       summary(model17)@post$expcoeffs,
+                                                       summary(model18)@post$expcoeffs,
+                                                       summary(model19)@post$expcoeffs,
+                                                       summary(model20)@post$expcoeffs,
+                                                       summary(model21)@post$expcoeffs),
+                                   Year = c(2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021),
+                                   era = 'turbo-hybrid')
+```
+
+
+Now, I'll fit two models for the recent ground effect era (2022 and 2023).
+
+```{r}
+
+model22 <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Year == 2022))
+
+model23 <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Year == 2023))
+```
+
+
+Here, I will tidy up the model coefficient estimates and bind the two *eras* together. 
+
+```{r}
+#exponentiate coefficient
+ground_effects_coefs <- data.frame(Position_grid = rbind(summary(model22)@post$expcoeffs,
+                                                       summary(model23)@post$expcoeffs),
+                                   Year = c(2022, 2023),
+                                   era = 'ground effects')
+
+# combine the coefficients for these two eras
+all_coefs <- turbo_hybrid_coefs %>%
+  bind_rows(ground_effects_coefs) %>%
+  mutate(era = factor(era, levels = c('turbo-hybrid', 'ground effects')))
+```
+
+
+Finally, I can plot model coefficient estimates by year. In this plot, I use a color fill to distinguish the pre-ground effect turbo-hybrid era (a pink-red color is used for years 2014 - 2021) from the ground effect era (a cyan color is used for 2022 and 2023). 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+all_coefs %>%
+  ggplot(aes(Year, Position_grid)) +
+  annotate(geom = 'rect', 
+           xmin = -Inf, xmax = 2021.5,
+           ymin = -Inf, ymax = Inf,
+           fill = '#F8766D',
+           alpha = 0.25) + 
+  annotate(geom = 'rect', 
+           xmin = 2021.5, xmax = Inf,
+           ymin = -Inf, ymax = Inf,
+           fill = '#00BFC4',
+           alpha = 0.25) + 
+  geom_vline(xintercept = 2021.5, col = 'grey') + 
+  geom_point(aes(fill = era), pch = 22) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  labs(fill = '',
+       x = 'Year', y = 'Coefficient Estimate for Starting Grid Position',
+       title = 'Change in Ordinal Regression Model Coefficient Estimates') +
+  scale_x_continuous(labels = seq(2014, 2023, 1),
+                     breaks = seq(2014, 2023, 1)) +
+  theme(legend.position = 'bottom',
+        plot.title = element_text(hjust = 0.5))
+```
+
+The plot above is not very easy to interpret. But, it is basically demonstrating that starting grid position matters *slightly less* in 2022 and 2023, relative to prior years. So, this does support the idea that the ground effect regulations increase a car's ability to make up positions. However, the plot leaves much to be desired in terms of intuitiveness. 
+
+
+As an alternative, we can plot predicted probabilities for each year. This will require more effort to tidy up the probabilities and standard errors, but it gives us a much more granular insight into yearly differences. In the following code chunks, I will construct a dataframe for each year's model that contains a predicted probability for each starting and finishing position combination. These probabilities are then ordered by starting position and grouped by finishing position to construct a distribution.  
+
+Here's how I tidy up data for 2014 through 2021.  
+
+```{r}
+## 2014
+preds_2014 <- data.frame(predictvglm(model14, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(preds_2014) <- placing_df$prob[-21]
+
+preds_2014 <- preds_2014  %>% 
+  mutate(Year = 2014) %>%
+  bind_cols(starting_grid)
+
+# Extract the standard error for each prediction
+standard_errors_2014 <- as.data.frame(predictvglm(model14, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(standard_errors_2014) <- placing_df$se[-21]
+```
+
+
+
+```{r}
+## 2015
+preds_2015 <- data.frame(predictvglm(model15, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(preds_2015) <- placing_df$prob[1:19]
+
+preds_2015 <- preds_2015  %>% 
+  mutate(Year = 2015) %>%
+  bind_cols(starting_grid)
+
+# Extract the standard error for each prediction
+standard_errors_2015 <- as.data.frame(predictvglm(model15, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(standard_errors_2015) <- placing_df$se[1:19]
+```
+
+
+
+```{r}
+## 2016
+preds_2016 <- data.frame(predictvglm(model16, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(preds_2016) <- placing_df$prob
+
+preds_2016 <- preds_2016  %>% 
+  mutate(Year = 2016) %>%
+  bind_cols(starting_grid)
+
+# Extract the standard error for each prediction
+standard_errors_2016 <- as.data.frame(predictvglm(model16, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(standard_errors_2016) <- placing_df$se
+
+```
+
+
+```{r}
+
+## 2017
+preds_2017 <- data.frame(predictvglm(model17, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(preds_2017) <- placing_df$prob[1:17]
+
+preds_2017 <- preds_2017  %>% 
+  mutate(Year = 2017) %>%
+  bind_cols(starting_grid)
+
+# Extract the standard error for each prediction
+standard_errors_2017 <- as.data.frame(predictvglm(model17, newdata = starting_grid, se.fit = T)$se.fit) %>% 
+  mutate(Year = 2017) %>%
+  bind_cols(starting_grid)
+
+# rename the standard error 
+names(standard_errors_2017) <- placing_df$se[1:18]
+
+```
+
+
+```{r}
+
+## 2018
+preds_2018 <- data.frame(predictvglm(model18, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(preds_2018) <- placing_df$prob[1:19]
+
+preds_2018 <- preds_2018  %>% 
+  mutate(Year = 2018) %>%
+  bind_cols(starting_grid)
+
+# Extract the standard error for each prediction
+standard_errors_2018 <- as.data.frame(predictvglm(model18, newdata = starting_grid, se.fit = T)$se.fit) %>% 
+  mutate(Year = 2018) %>%
+  bind_cols(starting_grid)
+
+# rename the standard error 
+names(standard_errors_2018) <- placing_df$se[1:20]
+```
+
+
+```{r}
+## 2019
+preds_2019 <- data.frame(predictvglm(model19, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(preds_2019) <- placing_df$prob[1:19]
+
+preds_2019 <- preds_2019  %>% 
+  mutate(Year = 2019) %>%
+  bind_cols(starting_grid)
+
+# Extract the standard error for each prediction
+standard_errors_2019 <- as.data.frame(predictvglm(model19, newdata = starting_grid, se.fit = T)$se.fit) %>% 
+  mutate(Year = 2019) %>%
+  bind_cols(starting_grid)
+
+# rename the standard error 
+names(standard_errors_2019) <- placing_df$se[1:20]
+```
+
+
+```{r}
+## 2020
+preds_2020 <- data.frame(predictvglm(model20, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(preds_2020) <- placing_df$prob[1:18]
+
+preds_2020 <- preds_2020  %>% 
+  mutate(Year = 2020) %>%
+  bind_cols(starting_grid)
+
+# Extract the standard error for each prediction
+standard_errors_2020 <- as.data.frame(predictvglm(model20, newdata = starting_grid, se.fit = T)$se.fit) %>% 
+  mutate(Year = 2020) %>%
+  bind_cols(starting_grid)
+
+# rename the standard error 
+names(standard_errors_2020) <- placing_df$se[1:19]
+```
+
+
+```{r}
+## 2021
+preds_2021 <- data.frame(predictvglm(model21, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(preds_2021) <- placing_df$prob[1:19]
+
+preds_2021 <- preds_2021  %>% 
+  mutate(Year = 2021) %>%
+  bind_cols(starting_grid)
+
+# Extract the standard error for each prediction
+standard_errors_2021 <- as.data.frame(predictvglm(model21, newdata = starting_grid, se.fit = T)$se.fit) %>% 
+  mutate(Year = 2021) %>%
+  bind_cols(starting_grid)
+
+# rename the standard error 
+names(standard_errors_2021) <- placing_df$se[1:20]
+
+```
+
+
+And, here's tidied dataframes for 2022 and 2023. 
+
+```{r}
+## 2022
+preds_2022 <- data.frame(predictvglm(model22, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(preds_2022) <- placing_df$prob[1:19]
+
+preds_2022 <- preds_2022  %>% 
+  mutate(Year = 2022) %>%
+  bind_cols(starting_grid)
+
+# Extract the standard error for each prediction
+standard_errors_2022 <- as.data.frame(predictvglm(model22, newdata = starting_grid, se.fit = T)$se.fit) %>% 
+  mutate(Year = 2022) %>%
+  bind_cols(starting_grid)
+
+# rename the standard error 
+names(standard_errors_2022) <- placing_df$se[1:20]
+```
+
+
+```{r}
+## 2023
+preds_2023 <- data.frame(predictvglm(model23, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(preds_2023) <- placing_df$prob[1:19]
+
+preds_2023 <- preds_2023  %>% 
+  mutate(Year = 2023) %>%
+  bind_cols(starting_grid)
+
+# Extract the standard error for each prediction
+standard_errors_2023 <- as.data.frame(predictvglm(model23, newdata = starting_grid, se.fit = T)$se.fit) %>% 
+  mutate(Year = 2023) %>%
+  bind_cols(starting_grid)
+
+# rename the standard error 
+names(standard_errors_2023) <- placing_df$se[1:20]
+```
+
+
+***How does starting position influence a driver's probability of winning a race over the last 10 years?***
+
+To answer this question, we can plot a yearly probability curve for finishing in P1 (across all starting grid positions).
+
+In the code chunk below, I will bind together each year's dataframe and plot the data.
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+rbind(preds_2014[, c('prob_1', 'Year', 'Position_grid')], 
+      preds_2015[, c('prob_1', 'Year', 'Position_grid')], 
+      preds_2016[, c('prob_1', 'Year', 'Position_grid')], preds_2017[, c('prob_1', 'Year', 'Position_grid')], preds_2018[, c('prob_1', 'Year', 'Position_grid')],
+      preds_2019[, c('prob_1', 'Year', 'Position_grid')],
+      preds_2020[, c('prob_1', 'Year', 'Position_grid')], preds_2021[, c('prob_1', 'Year', 'Position_grid')], 
+      preds_2022[, c('prob_1', 'Year', 'Position_grid')], preds_2023[, c('prob_1', 'Year', 'Position_grid')]) %>% 
+  mutate(pr = exp(prob_1),
+         Year = factor(Year)) %>% 
+  mutate( pr = pr / (1 + pr)) %>% 
+  ggplot(aes(Position_grid, y = pr, group  = Year, col = Year)) +
+  geom_line(size = 1) + 
+  geom_point(size = 2, pch = 21, col = 'black', aes(fill = Year)) +
+  theme_bw() +
+  labs( y = 'Probability of finishing P1',
+        x = 'Starting Grid Position',
+        title = 'Model Results by Year') +
+  scale_x_continuous(labels = seq(1, 20, 1),
+                     breaks = seq(1, 20, 1)) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+This is tough to make sense of because the curves are so close to eachother. One possible solution is to use `facet_zoom()` to *zoom* in on podium places. 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+library(ggforce)
+
+rbind(preds_2014[, c('prob_1', 'Year', 'Position_grid')], 
+      preds_2015[, c('prob_1', 'Year', 'Position_grid')], 
+      preds_2016[, c('prob_1', 'Year', 'Position_grid')], preds_2017[, c('prob_1', 'Year', 'Position_grid')], preds_2018[, c('prob_1', 'Year', 'Position_grid')],
+      preds_2019[, c('prob_1', 'Year', 'Position_grid')],
+      preds_2020[, c('prob_1', 'Year', 'Position_grid')], preds_2021[, c('prob_1', 'Year', 'Position_grid')], 
+      preds_2022[, c('prob_1', 'Year', 'Position_grid')], preds_2023[, c('prob_1', 'Year', 'Position_grid')]) %>% 
+  mutate(pr = exp(prob_1),
+         Year = factor(Year)) %>% 
+  mutate( pr = pr / (1 + pr)) %>% 
+  ggplot(aes(Position_grid, y = pr, group  = Year, col = Year)) +
+  geom_line(size = 1) + 
+  geom_point(size = 2, pch = 21, col = 'black', aes(fill = Year)) +
+  theme_bw() +
+  labs( y = 'Probability of finishing P1',
+        x = 'Starting Grid Position',
+        title = 'Model Results by Year',
+        subtitle = '2021 - 2023') +
+  scale_x_continuous(labels = seq(1, 20, 1),
+                     breaks = seq(1, 20, 1)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'bottom') +
+  facet_zoom(xlim = c(1,3))
+```
+
+
+Not much better! But, it was worth giving `facet_zoom()` a shot. 
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**Zooming in on data with ggplot**
+:::
+
+The **ggforce** package has a helpful function called `facet_zoom()`. This facetting function provides allows you to zoom in on a subset of the data, while keeping the view of the full dataset as a separate panel. The zoomed-in area will be indicated on the full dataset panel for reference. 
+
+
+For more information on `facet_zoom()`, check this out:
+
+https://ggforce.data-imaginist.com/reference/facet_zoom.html
+
+To learn about the **ggforce** package, see this link:
+
+https://ggforce.data-imaginist.com/index.html
+
+
+::::
+
+<br>
+<br>
+
+
+
+As an alternative, let's filter the data by 2021, 2022, and 2023 only. 
+
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+
+rbind(preds_2021[, c('prob_1', 'Year', 'Position_grid')], 
+      preds_2022[, c('prob_1', 'Year', 'Position_grid')], preds_2023[, c('prob_1', 'Year', 'Position_grid')]) %>% 
+  mutate(pr = exp(prob_1),
+         Year = factor(Year)) %>% 
+  mutate( pr = pr / (1 + pr)) %>% 
+  ggplot(aes(Position_grid, y = pr, group  = Year, col = Year)) +
+  geom_line(size = 1) + 
+  geom_point(size = 2, pch = 21, col = 'black', aes(fill = Year)) +
+  theme_bw() +
+  labs( y = 'Probability of finishing P1',
+        x = 'Starting Grid Position',
+        title = 'Model Results by Year',
+        subtitle = '2021 - 2023') +
+  scale_x_continuous(labels = seq(1, 20, 1),
+                     breaks = seq(1, 20, 1)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'bottom') +
+  facet_zoom(xlim = c(1,3))
+```
+
+
+This is better. It looks like drivers in 2022 and 2023 had a better chance of winning a race from 5th or worse position on the starting grid. In 2021, drivers who started from the first two rows of the grid had a better chance of winning than they did in 2022. Are these differences due to the new regulations, or is this simply capturing the fact that Verstappen won from 7th, 10th, and 14th with the recent Red Bull car? Not sure! 
+
+What about podiums? Because this model estimates the *cumulative* probability, the model is already estimating a probability of a podium (i.e. Probability(finish <= P3 | a starting position). So, I will plot these below. 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+rbind(preds_2021[, c('prob_3', 'Year', 'Position_grid')], 
+      preds_2022[, c('prob_3', 'Year', 'Position_grid')], 
+      preds_2023[, c('prob_3', 'Year', 'Position_grid')]) %>%
+  mutate(pr = exp(prob_3),
+         Year = factor(Year)) %>%
+  mutate( pr = pr / (1 + pr)) %>%
+  ggplot(aes(Position_grid, y = pr, group  = Year, col = Year)) +
+  geom_line(size = 1) + 
+  geom_point(size = 2, pch = 21, col = 'black', aes(fill = Year)) +
+  theme_bw() +
+  labs( y = 'Probability of finishing on the podium',
+        x = 'Starting Grid Position',
+        title = 'Model Results by Year',
+        subtitle = '2021 - 2023')  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'bottom')
+```
+
+The podium probabilities are even more compelling. Drivers starting from 5th or lower have an even greater chance of finishing on the podium in 2022 and 2023. In the next section, we will look into circuit-specific models. 
+
+## Explore Circuit Specific Models
+
+It is generally accepted among racing teams, drivers, and enthusiasts that overtaking (or passing opponents) is easier at some circuits compared to others. Let's explore whether there are indeed differences in our model coefficients across different circuits. 
+
+Note: Throughout this section, I will provide minimal commentary about the plots. This section is primarily for referencing and *gee-whiz* purposes. 
+
+### Bahrain
+
+The Bahrain Grand Prix is the first race of the season. What type of finish might we expect, if only using starting grid position as a predictor? Let's fit the same model to one track. 
+
+
+```{r}
+bahrain_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'bahrain'))
+
+```
+
+
+Now, we can make predictions for the grid.
+
+```{r}
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+predictions_bahrain <- as.data.frame(predictvglm(bahrain_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(predictions_bahrain) <- placing_df$prob[1:18]
+
+# Extract the standard error for each prediction
+standard_errors_bahrain <- as.data.frame(predictvglm(bahrain_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(standard_errors_bahrain) <- placing_df$se[1:18]
+```
+
+
+And, we can plot the data using this code: 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+starting_grid %>%
+  bind_cols(pr_1 = predictions_bahrain$prob_1,
+            se_1 = standard_errors_bahrain$se_1) %>%
+  mutate(pr = exp(pr_1),
+         lower = exp(pr_1 - se_1 * 1.96),
+         upper = exp(pr_1 + se_1 * 1.96)) %>%
+  mutate( pr = pr / (1 + pr),
+          lower = lower / (1 + lower),
+           upper = upper / (1 + upper)) %>%
+  ggplot(aes(Position_grid, y = pr, ymin = lower, ymax = upper)) +
+  geom_pointrange() +
+  theme_bw() +
+  labs( y = 'Probability of finishing P1',
+        x = 'Starting Grid Position',
+        title = 'Bahrain Grand Prix',
+        subtitle = 'Probability of a win') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'bottom')
+```
+
+What's the probability of a podium? We can extract these probabilities (and standard errors), and plot with ggplot. 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+starting_grid %>%
+  bind_cols(pr_3 = predictions_bahrain$prob_3,
+            se_3 = standard_errors_bahrain$se_3) %>%
+  mutate(pr = exp(pr_3),
+         lower = exp(pr_3 - se_3 * 1.96),
+         upper = exp(pr_3 + se_3 * 1.96)) %>%
+  mutate( pr = pr / (1 + pr),
+          lower = lower / (1 + lower),
+           upper = upper / (1 + upper)) %>%
+  ggplot(aes(Position_grid, y = pr, ymin = lower, ymax = upper)) +
+  geom_pointrange() +
+  theme_bw() +
+  labs( y = 'Probability of a podium',
+        x = 'Starting Grid Position',
+        title = 'Bahrain Gand Prix',
+        subtitle = 'Probability of a podium') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'bottom')
+```
+
+And now, I'll construct probability distributions for each finishing position given a starting a position at the Bahrain GP.
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+
+bahrain_preds_se_full <- predictions_bahrain %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(standard_errors_bahrain %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+bahrain_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.75, col = 'maroon') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Bahrain Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_x_continuous(breaks = c(1, 3, 6, 9, 12, 15, 18), labels = c(1, 3, 6, 9, 12, 15, 18)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'bottom')
+```
+
+
+
+### Saudi Arabia
+
+The second race of the 2023 season takes place in Saudi Arabia at the Jeddah Corniche Circuit. Jeddah is the fastest street circuit in Formula 1. How does it compare to other street circuits?
+
+
+
+```{r}
+# Fit model
+saudiarabia_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'saudi-arabia'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+predictions_saudiarabia <- as.data.frame(predictvglm(saudiarabia_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(predictions_saudiarabia) <- placing_df$prob[1:17]
+
+# Extract the standard error for each prediction
+standard_errors_saudiarabia <- as.data.frame(predictvglm(saudiarabia_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(standard_errors_saudiarabia) <- placing_df$se[1:17]
+```
+
+
+Here, I will plot the probability of a win at the Saudi Arabian Grand Prix.
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+starting_grid %>%
+  bind_cols(pr_1 = predictions_saudiarabia$prob_1,
+            se_1 = standard_errors_saudiarabia$se_1) %>%
+  mutate(pr = exp(pr_1),
+         lower = exp(pr_1 - se_1 * 1.96),
+         upper = exp(pr_1 + se_1 * 1.96)) %>%
+  mutate( pr = pr / (1 + pr),
+          lower = lower / (1 + lower),
+           upper = upper / (1 + upper)) %>%
+  ggplot(aes(Position_grid, y = pr, ymin = lower, ymax = upper)) +
+  geom_pointrange() +
+  theme_bw() +
+  labs( y = 'Probability of finishing P1',
+        x = 'Starting Grid Position',
+        title = 'Saudi Arabia',
+        subtitle = 'Probability of a win') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'bottom')
+```
+
+
+And here are probabilities of a podium. 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+starting_grid %>%
+  bind_cols(pr_3 = predictions_saudiarabia$prob_3,
+            se_3 = standard_errors_saudiarabia$se_3) %>%
+  mutate(pr = exp(pr_3),
+         lower = exp(pr_3 - se_3 * 1.96),
+         upper = exp(pr_3 + se_3 * 1.96)) %>%
+  mutate( pr = pr / (1 + pr),
+          lower = lower / (1 + lower),
+           upper = upper / (1 + upper)) %>%
+  ggplot(aes(Position_grid, y = pr, ymin = lower, ymax = upper)) +
+  geom_pointrange() +
+  theme_bw() +
+  labs( y = 'Probability of finishing on the podium',
+        x = 'Starting Grid Position',
+        title = 'Saudi Arabia',
+        subtitle = 'Probability of a podium') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'bottom')
+```
+
+
+Here's the full distribution for each starting grid position. 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+saudiarabia_preds_se_full <- predictions_saudiarabia %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(standard_errors_saudiarabia %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+saudiarabia_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.75, col = 'darkgreen') +
+  geom_point() +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Saudi Arabian Grand Prix: 2021 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_x_continuous(breaks = c(1, 3, 6, 9, 12, 15, 18), labels = c(1, 3, 6, 9, 12, 15, 18))
+```
+
+
+There are only three races to construct this Saudi Arabian model, so there's considerable variability in the estimated probabilities. That being said, we can still compare these point estimates to a much slower street circuit like Monaco. 
+
+
+
+
+### Monaco
+
+The most prestigious race on the Formula One calender takes place at the Circuit de Monaco. The Monaco Grand Prix takes place on the very narrow streets of Monte Carlo with plenty of elevation change and slow tight corners. In fact, it is the slowest circuit on the calender and includes the slowest corner of the entire season. These low speeds, tight quarters, and slow corners combine to produce the toughest circuit to overtake on. Over it's history, this Grand Prix averages about a dozen overtakes per race. I'm interested in knowing if these characteristics will show up when we model this race. Theoretically, the Monaco Grand Prix should have the tightest distributions. Let's see if the data support this! 
+
+```{r}
+monaco_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'monaco'))
+
+```
+
+
+After fitting the model, I will make predictions with the following code: 
+
+```{r}
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+predictions_monaco <- as.data.frame(predictvglm(monaco_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(predictions_monaco) <- placing_df$prob[1:18]
+
+# Extract the standard error for each prediction
+standard_errors_monaco <- as.data.frame(predictvglm(monaco_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(standard_errors_monaco) <- placing_df$se[1:18]
+```
+
+
+Now, I'll plot the Probability(P1 finish | a starting grid) at Monaco: 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+starting_grid %>%
+  bind_cols(pr_1 = predictions_monaco$prob_1,
+            se_1 = standard_errors_monaco$se_1) %>%
+  mutate(pr = exp(pr_1),
+         lower = exp(pr_1 - se_1 * 1.96),
+         upper = exp(pr_1 + se_1 * 1.96)) %>%
+  mutate( pr = pr / (1 + pr),
+          lower = lower / (1 + lower),
+           upper = upper / (1 + upper)) %>%
+  ggplot(aes(Position_grid, y = pr, ymin = lower, ymax = upper)) +
+  geom_pointrange() +
+  theme_bw() +
+  labs( y = 'Probability of finishing P1',
+        x = 'Starting Grid Position',
+        title = 'Monaco') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+
+```{r, warning = F, message = F}
+
+monaco_preds_se_full <- predictions_monaco %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(standard_errors_monaco %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+```
+
+
+Here's a plot of all the distributions for Monaco:
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+monaco_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'red') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Monaco Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+Let's compare the fastest street circuit (Jeddah) to the slowest (Monaco).
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+saudiarabia_preds_se_full %>%
+  dplyr::select(starting, placing, discrete_prob) %>%
+  left_join(monaco_preds_se_full %>%
+  dplyr::select(starting, placing, discrete_prob), by = c("starting", "placing"), suffix = c("_saudiarabia", "_monaco")) %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting),
+         delta = ifelse(discrete_prob_monaco > discrete_prob_saudiarabia, 'monaco', 'saudiarabia')) %>%
+  filter(starting_pos %in% c('P1', 'P2', 'P3', 'P4')) %>%
+  ggplot() +
+  geom_segment(aes(x = placing, xend = placing, y = discrete_prob_saudiarabia, yend = discrete_prob_monaco, col = delta),
+               size = 2, alpha = 0.5) +
+  geom_point(size = 2, pch = 21, col = 'black', aes(placing, discrete_prob_saudiarabia, fill = 'Saudi Arabia'), alpha = 0.75, show.legend = F) +
+  geom_point(size = 2, pch = 21, col = 'black', aes(placing, discrete_prob_monaco, fill = 'Monaco'), alpha = 0.75, show.legend = F) +
+  scale_color_manual("", values = c('Saudi Arabia' = 'green', 'Monaco' = 'red')) +
+  scale_fill_manual("", values = c('Saudi Arabia' = 'green', 'Monaco' = 'red')) +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Saudia Arabia (2021 - 2023) vs Monaco (2014 - 2023)') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+If we focus on the first 2 rows of the starting grid, we do see those cars have higher podium probabilities in Monaco. Is it easier to win in Jeddah from further down the grid?
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+saudiarabia_preds_se_full %>%
+  dplyr::select(starting, placing, discrete_prob) %>%
+  left_join(monaco_preds_se_full %>%
+  dplyr::select(starting, placing, discrete_prob), by = c("starting", "placing"), suffix = c("_saudiarabia", "_monaco")) %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting),
+         delta = ifelse(discrete_prob_monaco > discrete_prob_saudiarabia, 'monaco', 'saudiarabia')) %>%
+  filter(placing == 1) %>%
+  ggplot() +
+  geom_segment(aes(x = starting, xend = starting, y = discrete_prob_saudiarabia, yend = discrete_prob_monaco, col = delta),
+               size = 1.5, alpha = 0.5) +
+  geom_point(size = 2, pch = 21, col = 'black', aes(starting, discrete_prob_saudiarabia), fill = 'green', alpha = 0.75) +
+  geom_point(size = 2, pch = 21, col = 'black', aes(starting, discrete_prob_monaco), fill = 'red', alpha = 0.75) +
+  theme_bw() +
+  scale_color_manual("", values = c('Saudi Arabia' = 'green', 'Monaco' = 'red')) +
+  labs(x = 'Starting Grid Position',
+       y = 'Probability of a win',
+       title = expression(Discrete~Probability~of~finishing~P[1]),
+       subtitle = 'Saudi Arabia (2021 - 2023) vs Monaco (2014 - 2023)') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_x_continuous(labels = seq(1, 20, 1),
+                     breaks = seq(1, 20, 1))
+```
+
+
+It looks like that is likely the case. Cars at the front of the grid are rewarded more in Monaco, while cars further back in Saudi Arabia have a slightly better chance of a win than they do in Monaco. It looks like there is just a much stronger advantage to starting at the front of the grid in Monaco. 
+
+### Brazil
+
+The Sao Paulo Grand Prix is perhaps the easiest circuit to overtake on. Let's compare the model predictions and probabilities for Brazil to those of Monaco. 
+
+```{r}
+brazil_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'brazil'))
+
+```
+
+
+As before, I'll make predictions for the grid:
+
+```{r}
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+predictions_brazil<- as.data.frame(predictvglm(brazil_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(predictions_brazil) <- placing_df$prob[1:18]
+
+# Extract the standard error for each prediction
+standard_errors_brazil <- as.data.frame(predictvglm(brazil_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(standard_errors_brazil) <- placing_df$se[1:18]
+```
+
+
+Now, I'll compute the probability(P1 finish | a starting grid) in Brazil: 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+starting_grid %>%
+  bind_cols(pr_1 = predictions_brazil$prob_1,
+            se_1 = standard_errors_brazil$se_1) %>%
+  mutate(pr = exp(pr_1),
+         lower = exp(pr_1 - se_1 * 1.96),
+         upper = exp(pr_1 + se_1 * 1.96)) %>%
+  mutate( pr = pr / (1 + pr),
+          lower = lower / (1 + lower),
+           upper = upper / (1 + upper)) %>%
+  ggplot(aes(Position_grid, y = pr, ymin = lower, ymax = upper)) +
+  geom_pointrange() +
+  theme_bw() +
+  labs( y = 'Probability of finishing P1',
+        x = 'Starting Grid Position',
+        title = 'Brazil',
+        subtitle = '2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+And, I'll plot the discrete probability distributions here:
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+
+brazil_preds_se_full <- predictions_brazil %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(standard_errors_brazil %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+
+brazil_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'green') +
+  geom_point() +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Sao Paulo Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+How does Brazil compare to Monaco? Notice in the plot below that the red dots (Monaco) demonstrate higher probabilities for podium placings if a driver starts on the first 2 rows of the grid, compared to the green dots (Brazil). 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+brazil_preds_se_full %>%
+  dplyr::select(starting, placing, discrete_prob) %>%
+  left_join(monaco_preds_se_full %>%
+  dplyr::select(starting, placing, discrete_prob), by = c("starting", "placing"), suffix = c("_brazil", "_monaco")) %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting),
+         delta = ifelse(discrete_prob_monaco > discrete_prob_brazil, 'monaco', 'brazil')) %>%
+  filter(starting_pos %in% c('P1', 'P2', 'P3', 'P4')) %>%
+  ggplot() +
+  geom_segment(aes(x = placing, xend = placing, y = discrete_prob_brazil, yend = discrete_prob_monaco, col = delta),
+               size = 2, alpha = 0.5) +
+  geom_point(size = 2, pch = 21, col = 'black', aes(placing, discrete_prob_brazil, fill = 'Brazil'), alpha = 0.75, show.legend = F) +
+  geom_point(size = 2, pch = 21, col = 'black', aes(placing, discrete_prob_monaco, fill = 'Monaco'), alpha = 0.75, show.legend = F) +
+  scale_color_manual("", values = c('Brazil' = 'green', 'Monaco' = 'red')) +
+  scale_fill_manual("", values = c('Brazil' = 'green', 'Monaco' = 'red')) +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = title_color_coder("", "Sao Paulo", 'green', " vs ", "Monaco", 'red' ,": 2014 - 2023")) +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = ggtext::element_markdown(hjust = 0.5, size = 12)) 
+```
+
+We can also compare the probability of finishing P1 given any starting grid position between these two Grands Prix. 
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+brazil_preds_se_full %>%
+  dplyr::select(starting, placing, discrete_prob) %>%
+  left_join(monaco_preds_se_full %>%
+  dplyr::select(starting, placing, discrete_prob), by = c("starting", "placing"), suffix = c("_brazil", "_monaco")) %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting),
+         delta = ifelse(discrete_prob_monaco > discrete_prob_brazil, 'monaco', 'brazil')) %>%
+  filter(placing == 1) %>%
+  ggplot() +
+  geom_segment(aes(x = starting, xend = starting, y = discrete_prob_brazil, yend = discrete_prob_monaco, col = delta),
+               size = 1.5, alpha = 0.5) +
+  geom_point(size = 2, pch = 21, col = 'black', aes(starting, discrete_prob_brazil), fill = 'green', alpha = 0.75) +
+  geom_point(size = 2, pch = 21, col = 'black', aes(starting, discrete_prob_monaco), fill = 'red', alpha = 0.75) +
+  theme_bw() +
+  scale_color_manual("", values = c('Brazil' = 'green', 'Monaco' = 'red')) +
+  labs(x = 'Starting Position',
+       y = 'Probability of a race win',
+       title = expression(Discrete~Probability~of~finishing~P[1]),
+       subtitle = title_color_coder("", "Sao Paulo", 'green', " vs ", "Monaco", 'red' ,": 2014 - 2023")) +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = ggtext::element_markdown(hjust = 0.5, size = 12)) 
+```
+
+
+
+Relative to Brazil, there seems to be a distinct advantage in starting the Monaco Grand Prix from the front row. For example, starting from P1 at Monaco carries an approximately 33% chance of winning, while pole position in Brazil results in just a 26% win probability. Compared to Monaco, a driver has a higher likelihood of winning from any other row on the gird at the Sao Paulo Grand Prix. 
+
+Stated plainly... Qualifying on the front row in Monaco is very important! In Sao Paulo, a driver can make up positions. 
+
+## Appendix: Probability distributions for every Grand Prix
+
+In case you are interested in any particular circuit, I will build a model and plot results for each Grand Prix on the schedule using data from 2014 through 2023 (or whatever is available). 
+
+
+### Bahrain
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+
+# These predictions were generated earlier in the chapter
+bahrain_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.75, col = 'maroon') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Bahrain Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_x_continuous(breaks = c(1, 3, 6, 9, 12, 15, 18), labels = c(1, 3, 6, 9, 12, 15, 18)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = 'bottom')
+```
+
+### Saudi Arabia
+
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+
+# These predictions were generated earlier in the chapter
+saudiarabia_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.75, col = 'darkgreen') +
+  geom_point() +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Saudi Arabian Grand Prix: 2021 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_x_continuous(breaks = c(1, 3, 6, 9, 12, 15, 18), labels = c(1, 3, 6, 9, 12, 15, 18))
+```
+
+
+### Australia
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+australia_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'australia'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+australia_predictions <- as.data.frame(predictvglm(australia_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(australia_predictions) <- placing_df$prob[1:16]
+
+# Extract the standard error for each prediction
+australia_standard_errors <- as.data.frame(predictvglm(australia_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(australia_standard_errors) <- placing_df$se[1:16]
+
+# tidy up probabilities
+australia_preds_se_full <- australia_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(australia_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+australia_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'navy') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Australian Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+### Azerbaijan
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+azerbaijan_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'azerbaijan'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+azerbaijan_predictions <- as.data.frame(predictvglm(azerbaijan_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(azerbaijan_predictions) <- placing_df$prob[1:17]
+
+# Extract the standard error for each prediction
+azerbaijan_standard_errors <- as.data.frame(predictvglm(azerbaijan_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(azerbaijan_standard_errors) <- placing_df$se[1:17]
+
+# tidy up probabilities
+azerbaijan_preds_se_full <- azerbaijan_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(azerbaijan_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+azerbaijan_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'darkgreen') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Azerbaijan Grand Prix: 2017 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+
+### Miami
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+miami_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'miami'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+miami_predictions <- as.data.frame(predictvglm(miami_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(miami_predictions) <- placing_df$prob[1:19]
+
+# Extract the standard error for each prediction
+miami_standard_errors <- as.data.frame(predictvglm(miami_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(miami_standard_errors) <- placing_df$se[1:19]
+
+# tidy up probabilities
+miami_preds_se_full <- miami_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(miami_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+miami_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'darkorange') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Miami Grand Prix: 2022 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+### Emilia Romagna
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+emilia_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'emilia'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+emilia_predictions <- as.data.frame(predictvglm(emilia_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(emilia_predictions) <- placing_df$prob[1:16]
+
+# Extract the standard error for each prediction
+emilia_standard_errors <- as.data.frame(predictvglm(emilia_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(emilia_standard_errors) <- placing_df$se[1:16]
+
+# tidy up probabilities
+emilia_preds_se_full <- emilia_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(emilia_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+emilia_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'red') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Emilia Romagna Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+### Monaco
+
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+
+# These predictions were generated earlier in the chapter
+monaco_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'red') +
+  geom_point() +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Monaco Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+### Spain
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+spain_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'spain'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+spain_predictions <- as.data.frame(predictvglm(spain_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(spain_predictions) <- placing_df$prob[1:19]
+
+# Extract the standard error for each prediction
+spain_standard_errors <- as.data.frame(predictvglm(spain_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(spain_standard_errors) <- placing_df$se[1:19]
+
+# tidy up probabilities
+spain_preds_se_full <- spain_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(spain_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+spain_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'darkred') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Spanish Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+### Canada
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+canada_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'canada'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+canada_predictions <- as.data.frame(predictvglm(canada_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(canada_predictions) <- placing_df$prob[1:18]
+
+# Extract the standard error for each prediction
+canada_standard_errors <- as.data.frame(predictvglm(canada_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(canada_standard_errors) <- placing_df$se[1:18]
+
+# tidy up probabilities
+canada_preds_se_full <- canada_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(canada_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+canada_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'red') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Canadian Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+### Austria
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+austria_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'austria'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+austria_predictions <- as.data.frame(predictvglm(austria_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(austria_predictions) <- placing_df$prob[1:19]
+
+# Extract the standard error for each prediction
+austria_standard_errors <- as.data.frame(predictvglm(austria_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(austria_standard_errors) <- placing_df$se[1:19]
+
+# tidy up probabilities
+austria_preds_se_full <- austria_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(austria_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+austria_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'darkred') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Austrian Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+### Great Britain
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+british_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'great-britain'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+british_predictions <- as.data.frame(predictvglm(british_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(british_predictions) <- placing_df$prob[1:17]
+
+# Extract the standard error for each prediction
+british_standard_errors <- as.data.frame(predictvglm(british_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(british_standard_errors) <- placing_df$se[1:17]
+
+# tidy up probabilities
+british_preds_se_full <- british_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(british_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+british_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'navy') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'British Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+### Hungary
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+hungary_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'hungary'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+hungary_predictions <- as.data.frame(predictvglm(hungary_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(hungary_predictions) <- placing_df$prob[1:20]
+
+# Extract the standard error for each prediction
+hungary_standard_errors <- as.data.frame(predictvglm(hungary_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(hungary_standard_errors) <- placing_df$se[1:20]
+
+# tidy up probabilities
+hungary_preds_se_full <- hungary_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(hungary_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+hungary_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'forestgreen') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Hungarian Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+### Belgium
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+belgium_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'belgium'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+belgium_predictions <- as.data.frame(predictvglm(belgium_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(belgium_predictions) <- placing_df$prob[1:19]
+
+# Extract the standard error for each prediction
+belgium_standard_errors <- as.data.frame(predictvglm(belgium_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(belgium_standard_errors) <- placing_df$se[1:19]
+
+# tidy up probabilities
+belgium_preds_se_full <- belgium_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(belgium_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+belgium_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'black') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Belgian Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+### Netherlands
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+netherlands_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'netherlands'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+netherlands_predictions <- as.data.frame(predictvglm(netherlands_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(netherlands_predictions) <- placing_df$prob[1:17]
+
+# Extract the standard error for each prediction
+netherlands_standard_errors <- as.data.frame(predictvglm(netherlands_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(netherlands_standard_errors) <- placing_df$se[1:17]
+
+# tidy up probabilities
+netherlands_preds_se_full <- netherlands_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(netherlands_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+netherlands_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'orange4') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Dutch Grand Prix: 2021 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+### Monza
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+italy_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'italy'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+italy_predictions <- as.data.frame(predictvglm(italy_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(italy_predictions) <- placing_df$prob[1:18]
+
+# Extract the standard error for each prediction
+italy_standard_errors <- as.data.frame(predictvglm(italy_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(italy_standard_errors) <- placing_df$se[1:18]
+
+# tidy up probabilities
+italy_preds_se_full <- italy_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(italy_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+italy_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'green4') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Italian Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+
+### Singapore
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+singapore_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'singapore'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+singapore_predictions <- as.data.frame(predictvglm(singapore_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(singapore_predictions) <- placing_df$prob[1:18]
+
+# Extract the standard error for each prediction
+singapore_standard_errors <- as.data.frame(predictvglm(singapore_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(singapore_standard_errors) <- placing_df$se[1:18]
+
+# tidy up probabilities
+singapore_preds_se_full <- singapore_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(singapore_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+singapore_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'red') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Singapore Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+### Japan
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+japan_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'japan'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+japan_predictions <- as.data.frame(predictvglm(japan_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(japan_predictions) <- placing_df$prob[1:21]
+
+# Extract the standard error for each prediction
+japan_standard_errors <- as.data.frame(predictvglm(japan_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(japan_standard_errors) <- placing_df$se[1:21]
+
+# tidy up probabilities
+japan_preds_se_full <- japan_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(japan_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+japan_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'darkred') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Japanese Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+### Qatar
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+qatar_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'qatar'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+qatar_predictions <- as.data.frame(predictvglm(qatar_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(qatar_predictions) <- placing_df$prob[1:17]
+
+# Extract the standard error for each prediction
+qatar_standard_errors <- as.data.frame(predictvglm(qatar_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(qatar_standard_errors) <- placing_df$se[1:17]
+
+# tidy up probabilities
+qatar_preds_se_full <- qatar_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(qatar_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+qatar_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'maroon') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Qatar Grand Prix: 2021 & 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+### United States (Circuit of the Americas in Austin, Texas)
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+library(ggstar)
+
+united_states_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'united-states'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+united_states_predictions <- as.data.frame(predictvglm(united_states_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(united_states_predictions) <- placing_df$prob[1:17]
+
+# Extract the standard error for each prediction
+united_states_standard_errors <- as.data.frame(predictvglm(united_states_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(united_states_standard_errors) <- placing_df$se[1:17]
+
+# tidy up probabilities
+united_states_preds_se_full <- united_states_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(united_states_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+united_states_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.75, col = 'red') +
+  geom_star(col = 'blue', size = 1.5, alpha = 1, fill = 'white') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'United States Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+
+<br>
+<br>
+
+:::: {.blackbox data-latex=""}
+::: {.center data-latex=""}
+**Plotting stars in ggplot**
+:::
+
+The **ggstar** package provides different geometries for ggplot2 to create more easily discernible shapes. For instance, you can use this package to plot specific triangles (i.e. right triangles), hearts, or ellipses. 
+
+As an admittedly obnoxious American, I used the `geom_star()` function to plot stars for my data points. 
+
+For more information on the **ggstar** package, visit this link:
+
+https://cran.r-project.org/web/packages/ggstar/vignettes/ggstar.html
+
+::::
+
+<br>
+<br>
+
+
+### Mexico
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+mexico_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'mexico'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+mexico_predictions <- as.data.frame(predictvglm(mexico_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(mexico_predictions) <- placing_df$prob[1:19]
+
+# Extract the standard error for each prediction
+mexico_standard_errors <- as.data.frame(predictvglm(mexico_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(mexico_standard_errors) <- placing_df$se[1:19]
+
+# tidy up probabilities
+mexico_preds_se_full <- mexico_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(mexico_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+mexico_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'darkgreen') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Mexican Grand Prix: 2015 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+### Brazil
+
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+
+# These predictions were generated earlier in the chapter
+brazil_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.5, col = 'green') +
+  geom_point() +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Sao Paulo Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+### Abu Dhabi
+
+```{r, message = F, warning = F, fig.height= 8, fig.width= 10}
+abudhabi_model <- vglm(Position_race ~ Position_grid, 
+                      family = cumulative(parallel = T, reverse = F),
+                      data = grids_and_races %>%
+                       filter(Race == 'abu-dhabi'))
+
+# Make Predictions for each Finishing position (1:20), using each Starting Position (1:20)
+abudhabi_predictions <- as.data.frame(predictvglm(abudhabi_model, newdata = starting_grid, se.fit = T)$fitted.values)
+
+# rename the columns
+names(abudhabi_predictions) <- placing_df$prob[1:19]
+
+# Extract the standard error for each prediction
+abudhabi_standard_errors <- as.data.frame(predictvglm(abudhabi_model, newdata = starting_grid, se.fit = T)$se.fit)
+
+# rename the standard error 
+names(abudhabi_standard_errors) <- placing_df$se[1:19]
+
+# tidy up probabilities
+abudhabi_preds_se_full <- abudhabi_predictions %>%
+  mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'prob') %>% 
+  bind_cols(abudhabi_standard_errors %>% mutate(starting = 1:n()) %>%
+  pivot_longer(- starting, names_to = 'placing', values_to = 'se') %>%
+    dplyr::select(se)) %>%
+  mutate(placing = as.numeric(str_remove(placing, 'prob_'))) %>%
+  mutate(prob = exp(prob)) %>%
+  mutate(prob = prob / (1 + prob)) %>%
+  group_by(starting) %>% 
+  mutate(discrete_prob = ifelse(is.na(prob - lag(prob)), prob, (prob - lag(prob)))) %>%
+  ungroup()
+
+# Plot
+abudhabi_preds_se_full %>%
+  mutate(starting_pos = as.factor(paste0('P',starting)),
+         starting_pos = fct_reorder(starting_pos, starting)) %>%
+  ggplot(aes(placing, discrete_prob)) +
+  geom_point() +
+  geom_segment(aes(x = placing, xend = placing, y = 0, yend = discrete_prob),
+               size = 2, alpha = 0.75, col = 'black') +
+  theme_bw() +
+  facet_wrap(~ starting, labeller = label_both) +
+  labs(x = 'Final Race Classification',
+       y = 'Probability',
+       title = expression(Discrete~Probability~of~finishing~P[n]),
+       subtitle = 'Abu Dhabi Grand Prix: 2014 - 2023') +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) 
+```
+
+
+
+
+## Next Chapter
+
+In these models I excluded DNFs (cars that did not finish) from the dataset. In the next chapter, I will instead *focus* on DNFs. Specifically, I will use logistic regression models to better understand factors that may influence the rate of DNFs. 
+
+\newpage
