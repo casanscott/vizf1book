@@ -23,7 +23,7 @@
 <meta name="author" content="Casan Scott, Ph.D." />
 
 
-<meta name="date" content="2024-02-22" />
+<meta name="date" content="2024-02-24" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -297,39 +297,35 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p><span class="math display">\[logit^{-1}(x) = \frac{e^{x}}{1 + e^{x}}\]</span></p>
 <p>To visualize how the logit and inverse logit functions work, I made the following figures. I create some sample data called <code>x</code>. I then plot <code>x</code> vs <code>logit(x)</code>. Hopefully this helps!</p>
 <p>Here is a plot of the linear predictor vs linear predictors transformed to probabilities using the inverse logit function.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="dnf-did-not-finish.html#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create sample data</span></span>
-<span id="cb1-2"><a href="dnf-did-not-finish.html#cb1-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">10</span>, <span class="dv">10</span>, <span class="fl">0.1</span>)</span>
-<span id="cb1-3"><a href="dnf-did-not-finish.html#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="dnf-did-not-finish.html#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># apply an inverse logit function to x</span></span>
-<span id="cb1-5"><a href="dnf-did-not-finish.html#cb1-5" aria-hidden="true" tabindex="-1"></a>inv_logit_x <span class="ot">&lt;-</span> <span class="fu">exp</span>(x) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(x))</span>
-<span id="cb1-6"><a href="dnf-did-not-finish.html#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="dnf-did-not-finish.html#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot these two variables</span></span>
-<span id="cb1-8"><a href="dnf-did-not-finish.html#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">qplot</span>(x, inv_logit_x) <span class="sc">+</span></span>
-<span id="cb1-9"><a href="dnf-did-not-finish.html#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y=</span><span class="fu">expression</span>(<span class="fu">paste</span>(logit<span class="sc">^-</span><span class="dv">1</span>,<span class="st">&quot;(x)&quot;</span>))) <span class="sc">+</span></span>
-<span id="cb1-10"><a href="dnf-did-not-finish.html#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span></code></pre></div>
-<pre><code>## Warning: `qplot()` was deprecated in ggplot2 3.4.0.
-## This warning is displayed once every 8 hours.
-## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
-## generated.</code></pre>
-<p><img src="_main_files/figure-html/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb211"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb211-1"><a href="dnf-did-not-finish.html#cb211-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create sample data</span></span>
+<span id="cb211-2"><a href="dnf-did-not-finish.html#cb211-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">10</span>, <span class="dv">10</span>, <span class="fl">0.1</span>)</span>
+<span id="cb211-3"><a href="dnf-did-not-finish.html#cb211-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb211-4"><a href="dnf-did-not-finish.html#cb211-4" aria-hidden="true" tabindex="-1"></a><span class="co"># apply an inverse logit function to x</span></span>
+<span id="cb211-5"><a href="dnf-did-not-finish.html#cb211-5" aria-hidden="true" tabindex="-1"></a>inv_logit_x <span class="ot">&lt;-</span> <span class="fu">exp</span>(x) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(x))</span>
+<span id="cb211-6"><a href="dnf-did-not-finish.html#cb211-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb211-7"><a href="dnf-did-not-finish.html#cb211-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot these two variables</span></span>
+<span id="cb211-8"><a href="dnf-did-not-finish.html#cb211-8" aria-hidden="true" tabindex="-1"></a><span class="fu">qplot</span>(x, inv_logit_x) <span class="sc">+</span></span>
+<span id="cb211-9"><a href="dnf-did-not-finish.html#cb211-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y=</span><span class="fu">expression</span>(<span class="fu">paste</span>(logit<span class="sc">^-</span><span class="dv">1</span>,<span class="st">&quot;(x)&quot;</span>))) <span class="sc">+</span></span>
+<span id="cb211-10"><a href="dnf-did-not-finish.html#cb211-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span></code></pre></div>
+<p><img src="_main_files/figure-html/unnamed-chunk-197-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>We can also use the <code>plogis()</code> function to perform the inverse logit transformation. See here:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="dnf-did-not-finish.html#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot these two variables</span></span>
-<span id="cb3-2"><a href="dnf-did-not-finish.html#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">qplot</span>(x, <span class="fu">plogis</span>(x)) <span class="sc">+</span></span>
-<span id="cb3-3"><a href="dnf-did-not-finish.html#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y=</span><span class="fu">expression</span>(<span class="fu">paste</span>(logit<span class="sc">^-</span><span class="dv">1</span>,<span class="st">&quot;(x)&quot;</span>))) <span class="sc">+</span></span>
-<span id="cb3-4"><a href="dnf-did-not-finish.html#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span></code></pre></div>
-<p><img src="_main_files/figure-html/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb212"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb212-1"><a href="dnf-did-not-finish.html#cb212-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot these two variables</span></span>
+<span id="cb212-2"><a href="dnf-did-not-finish.html#cb212-2" aria-hidden="true" tabindex="-1"></a><span class="fu">qplot</span>(x, <span class="fu">plogis</span>(x)) <span class="sc">+</span></span>
+<span id="cb212-3"><a href="dnf-did-not-finish.html#cb212-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y=</span><span class="fu">expression</span>(<span class="fu">paste</span>(logit<span class="sc">^-</span><span class="dv">1</span>,<span class="st">&quot;(x)&quot;</span>))) <span class="sc">+</span></span>
+<span id="cb212-4"><a href="dnf-did-not-finish.html#cb212-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span></code></pre></div>
+<p><img src="_main_files/figure-html/unnamed-chunk-198-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>A logistic regression model should allow us to analyze our data to understand how the probability of a DNF varies across various predictor variables. One research question that I have is:</p>
 <p><em>Does the probability of a DNF vary across years?</em></p>
 <p>Well, in an attempt to answer that question, one could simply calculate the proportion of DNFs from 2014 to 2023. There are better ways!</p>
 <p>To demonstrate how to use a logistic regression model to answer this type of question, I will start with an even simpler example. If we were to pool all years together and calculate the proportion of cars that DNF, that calculation would reveal that 17.2% of cars DNF from a race:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="dnf-did-not-finish.html#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(races_allyears_dnf<span class="sc">$</span>DNF, <span class="at">na.rm =</span> T)</span></code></pre></div>
+<div class="sourceCode" id="cb213"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb213-1"><a href="dnf-did-not-finish.html#cb213-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(races_allyears_dnf<span class="sc">$</span>DNF, <span class="at">na.rm =</span> T)</span></code></pre></div>
 <pre><code>## [1] 0.1719205</code></pre>
 <p>A more statistically sound way to estimate this rate is to use a logistic regression model. The most basic logistic regression model would be an intercept-only model. Notice that the transformed intercept of this model is identical to the manually calculated proportion of 17.2%.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="dnf-did-not-finish.html#cb6-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.0</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> <span class="dv">1</span>, <span class="at">data =</span> races_allyears_dnf,</span>
-<span id="cb6-2"><a href="dnf-did-not-finish.html#cb6-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span>
-<span id="cb6-3"><a href="dnf-did-not-finish.html#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="dnf-did-not-finish.html#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Transform the coefficient to probability scale</span></span>
-<span id="cb6-5"><a href="dnf-did-not-finish.html#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plogis</span>(<span class="fu">coef</span>(dnf.model<span class="fl">.0</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb215"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb215-1"><a href="dnf-did-not-finish.html#cb215-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.0</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> <span class="dv">1</span>, <span class="at">data =</span> races_allyears_dnf,</span>
+<span id="cb215-2"><a href="dnf-did-not-finish.html#cb215-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span>
+<span id="cb215-3"><a href="dnf-did-not-finish.html#cb215-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb215-4"><a href="dnf-did-not-finish.html#cb215-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Transform the coefficient to probability scale</span></span>
+<span id="cb215-5"><a href="dnf-did-not-finish.html#cb215-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plogis</span>(<span class="fu">coef</span>(dnf.model<span class="fl">.0</span>))</span></code></pre></div>
 <pre><code>## (Intercept) 
 ##   0.1719205</code></pre>
 <p>Let’s expand this model in the next section.</p>
@@ -337,11 +333,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="yearly-differences" class="section level2 hasAnchor" number="7.2">
 <h2><span class="header-section-number">7.2</span> Yearly Differences<a href="dnf-did-not-finish.html#yearly-differences" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Ok, back to our original research question! Does the proportion of DNFs <em>vary over time</em>? One would think! I would assume that as a regulation era evolves, the engineers will build increasingly dependable cars. Let’s see if the data backs this up. In the code below, I will fit a logistic regression model using <code>glm()</code> and transform the coefficient estimates using the <code>plogis()</code> function.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="dnf-did-not-finish.html#cb8-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.1</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> Year, <span class="at">data =</span> races_allyears_dnf,</span>
-<span id="cb8-2"><a href="dnf-did-not-finish.html#cb8-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span>
-<span id="cb8-3"><a href="dnf-did-not-finish.html#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="dnf-did-not-finish.html#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Transform the coefficient to probability scale</span></span>
-<span id="cb8-5"><a href="dnf-did-not-finish.html#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">Probability =</span> <span class="fu">plogis</span>(<span class="fu">coef</span>(dnf.model<span class="fl">.1</span>)))</span></code></pre></div>
+<div class="sourceCode" id="cb217"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb217-1"><a href="dnf-did-not-finish.html#cb217-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.1</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> Year, <span class="at">data =</span> races_allyears_dnf,</span>
+<span id="cb217-2"><a href="dnf-did-not-finish.html#cb217-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span>
+<span id="cb217-3"><a href="dnf-did-not-finish.html#cb217-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb217-4"><a href="dnf-did-not-finish.html#cb217-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Transform the coefficient to probability scale</span></span>
+<span id="cb217-5"><a href="dnf-did-not-finish.html#cb217-5" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">Probability =</span> <span class="fu">plogis</span>(<span class="fu">coef</span>(dnf.model<span class="fl">.1</span>)))</span></code></pre></div>
 <pre><code>##          Probability
 ## Year2014   0.2088452
 ## Year2015   0.1994681
@@ -354,43 +350,43 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ## Year2022   0.1642857
 ## Year2023   0.1366743</code></pre>
 <p>It looks like the data support this to some degree. Just by looking at this table, it appears that the proportion is trending downward but also bouncing around from year to year. We can plot this data to make it a little more clear:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="dnf-did-not-finish.html#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(dnf.model<span class="fl">.1</span>, <span class="at">exp =</span> T) <span class="sc">%&gt;%</span></span>
-<span id="cb10-2"><a href="dnf-did-not-finish.html#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">term =</span> <span class="fu">str_remove</span>(term, <span class="st">&quot;Year&quot;</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb10-3"><a href="dnf-did-not-finish.html#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(term, estimate)) <span class="sc">+</span></span>
-<span id="cb10-4"><a href="dnf-did-not-finish.html#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">group =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
-<span id="cb10-5"><a href="dnf-did-not-finish.html#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
-<span id="cb10-6"><a href="dnf-did-not-finish.html#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb10-7"><a href="dnf-did-not-finish.html#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
-<span id="cb10-8"><a href="dnf-did-not-finish.html#cb10-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Year&#39;</span>,</span>
-<span id="cb10-9"><a href="dnf-did-not-finish.html#cb10-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;Yearly trend in DNF Probability&#39;</span>) <span class="sc">+</span></span>
-<span id="cb10-10"><a href="dnf-did-not-finish.html#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>()) <span class="sc">+</span></span>
-<span id="cb10-11"><a href="dnf-did-not-finish.html#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>))</span></code></pre></div>
-<p><img src="_main_files/figure-html/unnamed-chunk-7-1.png" width="960" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb219"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb219-1"><a href="dnf-did-not-finish.html#cb219-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(dnf.model<span class="fl">.1</span>, <span class="at">exp =</span> T) <span class="sc">%&gt;%</span></span>
+<span id="cb219-2"><a href="dnf-did-not-finish.html#cb219-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">term =</span> <span class="fu">str_remove</span>(term, <span class="st">&quot;Year&quot;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb219-3"><a href="dnf-did-not-finish.html#cb219-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(term, estimate)) <span class="sc">+</span></span>
+<span id="cb219-4"><a href="dnf-did-not-finish.html#cb219-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">group =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb219-5"><a href="dnf-did-not-finish.html#cb219-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb219-6"><a href="dnf-did-not-finish.html#cb219-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb219-7"><a href="dnf-did-not-finish.html#cb219-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
+<span id="cb219-8"><a href="dnf-did-not-finish.html#cb219-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Year&#39;</span>,</span>
+<span id="cb219-9"><a href="dnf-did-not-finish.html#cb219-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;Yearly trend in DNF Probability&#39;</span>) <span class="sc">+</span></span>
+<span id="cb219-10"><a href="dnf-did-not-finish.html#cb219-10" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>()) <span class="sc">+</span></span>
+<span id="cb219-11"><a href="dnf-did-not-finish.html#cb219-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>))</span></code></pre></div>
+<p><img src="_main_files/figure-html/unnamed-chunk-202-1.png" width="960" style="display: block; margin: auto;" /></p>
 <p>If we were to look at the number of DNFs by track, some locations stand out. For instance, Baku, Australia, and the U.S. Grand Prix all have DNF percentages of at least 20% since 2014.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="dnf-did-not-finish.html#cb11-1" aria-hidden="true" tabindex="-1"></a>races_allyears_dnf <span class="sc">%&gt;%</span></span>
-<span id="cb11-2"><a href="dnf-did-not-finish.html#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Circuit) <span class="sc">%&gt;%</span></span>
-<span id="cb11-3"><a href="dnf-did-not-finish.html#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="st">`</span><span class="at">% of DNFs</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">round</span>(<span class="fu">mean</span>(DNF, <span class="at">na.rm =</span> T), <span class="dv">3</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb11-4"><a href="dnf-did-not-finish.html#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb11-5"><a href="dnf-did-not-finish.html#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="st">`</span><span class="at">% of DNFs</span><span class="st">`</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb11-6"><a href="dnf-did-not-finish.html#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="st">`</span><span class="at">% of DNFs</span><span class="st">`</span> <span class="ot">=</span> scales<span class="sc">::</span><span class="fu">percent</span>(<span class="st">`</span><span class="at">% of DNFs</span><span class="st">`</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb11-7"><a href="dnf-did-not-finish.html#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gt</span>()</span></code></pre></div>
-<div id="kjlhzyfoqv" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#kjlhzyfoqv table {
+<div class="sourceCode" id="cb220"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb220-1"><a href="dnf-did-not-finish.html#cb220-1" aria-hidden="true" tabindex="-1"></a>races_allyears_dnf <span class="sc">%&gt;%</span></span>
+<span id="cb220-2"><a href="dnf-did-not-finish.html#cb220-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Circuit) <span class="sc">%&gt;%</span></span>
+<span id="cb220-3"><a href="dnf-did-not-finish.html#cb220-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="st">`</span><span class="at">% of DNFs</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">round</span>(<span class="fu">mean</span>(DNF, <span class="at">na.rm =</span> T), <span class="dv">3</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb220-4"><a href="dnf-did-not-finish.html#cb220-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb220-5"><a href="dnf-did-not-finish.html#cb220-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="st">`</span><span class="at">% of DNFs</span><span class="st">`</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb220-6"><a href="dnf-did-not-finish.html#cb220-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="st">`</span><span class="at">% of DNFs</span><span class="st">`</span> <span class="ot">=</span> scales<span class="sc">::</span><span class="fu">percent</span>(<span class="st">`</span><span class="at">% of DNFs</span><span class="st">`</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb220-7"><a href="dnf-did-not-finish.html#cb220-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gt</span>()</span></code></pre></div>
+<div id="usjkanfprw" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#usjkanfprw table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#kjlhzyfoqv thead, #kjlhzyfoqv tbody, #kjlhzyfoqv tfoot, #kjlhzyfoqv tr, #kjlhzyfoqv td, #kjlhzyfoqv th {
+#usjkanfprw thead, #usjkanfprw tbody, #usjkanfprw tfoot, #usjkanfprw tr, #usjkanfprw td, #usjkanfprw th {
   border-style: none;
 }
 
-#kjlhzyfoqv p {
+#usjkanfprw p {
   margin: 0;
   padding: 0;
 }
 
-#kjlhzyfoqv .gt_table {
+#usjkanfprw .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -416,12 +412,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   border-left-color: #D3D3D3;
 }
 
-#kjlhzyfoqv .gt_caption {
+#usjkanfprw .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#kjlhzyfoqv .gt_title {
+#usjkanfprw .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -433,7 +429,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   border-bottom-width: 0;
 }
 
-#kjlhzyfoqv .gt_subtitle {
+#usjkanfprw .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -445,7 +441,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   border-top-width: 0;
 }
 
-#kjlhzyfoqv .gt_heading {
+#usjkanfprw .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -457,13 +453,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   border-right-color: #D3D3D3;
 }
 
-#kjlhzyfoqv .gt_bottom_border {
+#usjkanfprw .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#kjlhzyfoqv .gt_col_headings {
+#usjkanfprw .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -478,7 +474,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   border-right-color: #D3D3D3;
 }
 
-#kjlhzyfoqv .gt_col_heading {
+#usjkanfprw .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -498,7 +494,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   overflow-x: hidden;
 }
 
-#kjlhzyfoqv .gt_column_spanner_outer {
+#usjkanfprw .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -510,15 +506,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   padding-right: 4px;
 }
 
-#kjlhzyfoqv .gt_column_spanner_outer:first-child {
+#usjkanfprw .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#kjlhzyfoqv .gt_column_spanner_outer:last-child {
+#usjkanfprw .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#kjlhzyfoqv .gt_column_spanner {
+#usjkanfprw .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -530,11 +526,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   width: 100%;
 }
 
-#kjlhzyfoqv .gt_spanner_row {
+#usjkanfprw .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#kjlhzyfoqv .gt_group_heading {
+#usjkanfprw .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -560,7 +556,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   text-align: left;
 }
 
-#kjlhzyfoqv .gt_empty_group_heading {
+#usjkanfprw .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -575,15 +571,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   vertical-align: middle;
 }
 
-#kjlhzyfoqv .gt_from_md > :first-child {
+#usjkanfprw .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#kjlhzyfoqv .gt_from_md > :last-child {
+#usjkanfprw .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#kjlhzyfoqv .gt_row {
+#usjkanfprw .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -602,7 +598,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   overflow-x: hidden;
 }
 
-#kjlhzyfoqv .gt_stub {
+#usjkanfprw .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -615,7 +611,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   padding-right: 5px;
 }
 
-#kjlhzyfoqv .gt_stub_row_group {
+#usjkanfprw .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -629,15 +625,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   vertical-align: top;
 }
 
-#kjlhzyfoqv .gt_row_group_first td {
+#usjkanfprw .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#kjlhzyfoqv .gt_row_group_first th {
+#usjkanfprw .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#kjlhzyfoqv .gt_summary_row {
+#usjkanfprw .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -647,16 +643,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   padding-right: 5px;
 }
 
-#kjlhzyfoqv .gt_first_summary_row {
+#usjkanfprw .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#kjlhzyfoqv .gt_first_summary_row.thick {
+#usjkanfprw .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#kjlhzyfoqv .gt_last_summary_row {
+#usjkanfprw .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -666,7 +662,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   border-bottom-color: #D3D3D3;
 }
 
-#kjlhzyfoqv .gt_grand_summary_row {
+#usjkanfprw .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -676,7 +672,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   padding-right: 5px;
 }
 
-#kjlhzyfoqv .gt_first_grand_summary_row {
+#usjkanfprw .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -686,7 +682,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   border-top-color: #D3D3D3;
 }
 
-#kjlhzyfoqv .gt_last_grand_summary_row_top {
+#usjkanfprw .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -696,11 +692,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   border-bottom-color: #D3D3D3;
 }
 
-#kjlhzyfoqv .gt_striped {
+#usjkanfprw .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#kjlhzyfoqv .gt_table_body {
+#usjkanfprw .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -709,7 +705,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   border-bottom-color: #D3D3D3;
 }
 
-#kjlhzyfoqv .gt_footnotes {
+#usjkanfprw .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -723,7 +719,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   border-right-color: #D3D3D3;
 }
 
-#kjlhzyfoqv .gt_footnote {
+#usjkanfprw .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -732,7 +728,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   padding-right: 5px;
 }
 
-#kjlhzyfoqv .gt_sourcenotes {
+#usjkanfprw .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -746,7 +742,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   border-right-color: #D3D3D3;
 }
 
-#kjlhzyfoqv .gt_sourcenote {
+#usjkanfprw .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -754,63 +750,63 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   padding-right: 5px;
 }
 
-#kjlhzyfoqv .gt_left {
+#usjkanfprw .gt_left {
   text-align: left;
 }
 
-#kjlhzyfoqv .gt_center {
+#usjkanfprw .gt_center {
   text-align: center;
 }
 
-#kjlhzyfoqv .gt_right {
+#usjkanfprw .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#kjlhzyfoqv .gt_font_normal {
+#usjkanfprw .gt_font_normal {
   font-weight: normal;
 }
 
-#kjlhzyfoqv .gt_font_bold {
+#usjkanfprw .gt_font_bold {
   font-weight: bold;
 }
 
-#kjlhzyfoqv .gt_font_italic {
+#usjkanfprw .gt_font_italic {
   font-style: italic;
 }
 
-#kjlhzyfoqv .gt_super {
+#usjkanfprw .gt_super {
   font-size: 65%;
 }
 
-#kjlhzyfoqv .gt_footnote_marks {
+#usjkanfprw .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#kjlhzyfoqv .gt_asterisk {
+#usjkanfprw .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#kjlhzyfoqv .gt_indent_1 {
+#usjkanfprw .gt_indent_1 {
   text-indent: 5px;
 }
 
-#kjlhzyfoqv .gt_indent_2 {
+#usjkanfprw .gt_indent_2 {
   text-indent: 10px;
 }
 
-#kjlhzyfoqv .gt_indent_3 {
+#usjkanfprw .gt_indent_3 {
   text-indent: 15px;
 }
 
-#kjlhzyfoqv .gt_indent_4 {
+#usjkanfprw .gt_indent_4 {
   text-indent: 20px;
 }
 
-#kjlhzyfoqv .gt_indent_5 {
+#usjkanfprw .gt_indent_5 {
   text-indent: 25px;
 }
 </style>
@@ -891,143 +887,143 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </table>
 </div>
 <p>We can add an interaction term to this model, and make a yearly estimate for each circuit in our data.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="dnf-did-not-finish.html#cb12-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.2</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> Year<span class="sc">:</span>Circuit, <span class="at">data =</span> races_allyears_dnf,</span>
-<span id="cb12-2"><a href="dnf-did-not-finish.html#cb12-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb221"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb221-1"><a href="dnf-did-not-finish.html#cb221-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.2</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> Year<span class="sc">:</span>Circuit, <span class="at">data =</span> races_allyears_dnf,</span>
+<span id="cb221-2"><a href="dnf-did-not-finish.html#cb221-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span></code></pre></div>
 <p>Here’s a comparison of this updated model’s output across a few different circuits:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="dnf-did-not-finish.html#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(dnf.model<span class="fl">.2</span>, <span class="at">exp =</span> T) <span class="sc">%&gt;%</span></span>
-<span id="cb13-2"><a href="dnf-did-not-finish.html#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">term =</span> <span class="fu">str_remove</span>(term, <span class="st">&quot;Year&quot;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb13-3"><a href="dnf-did-not-finish.html#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">separate</span>(term, <span class="at">sep =</span> <span class="st">&#39;:Circuit&#39;</span>, <span class="fu">c</span>(<span class="st">&quot;Year&quot;</span>, <span class="st">&quot;Circuit&quot;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb13-4"><a href="dnf-did-not-finish.html#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Circuit <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&#39;monaco&#39;</span>, <span class="st">&#39;united-states&#39;</span>, <span class="st">&#39;great-britain&#39;</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb13-5"><a href="dnf-did-not-finish.html#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(Year, estimate, <span class="at">group =</span> Circuit, <span class="at">col =</span> Circuit)) <span class="sc">+</span></span>
-<span id="cb13-6"><a href="dnf-did-not-finish.html#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
-<span id="cb13-7"><a href="dnf-did-not-finish.html#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
-<span id="cb13-8"><a href="dnf-did-not-finish.html#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb13-9"><a href="dnf-did-not-finish.html#cb13-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
-<span id="cb13-10"><a href="dnf-did-not-finish.html#cb13-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Year&#39;</span>,</span>
-<span id="cb13-11"><a href="dnf-did-not-finish.html#cb13-11" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;Yearly trend in DNF Probability&#39;</span>) <span class="sc">+</span></span>
-<span id="cb13-12"><a href="dnf-did-not-finish.html#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>()) <span class="sc">+</span></span>
-<span id="cb13-13"><a href="dnf-did-not-finish.html#cb13-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
-<span id="cb13-14"><a href="dnf-did-not-finish.html#cb13-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
-<span id="cb13-15"><a href="dnf-did-not-finish.html#cb13-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
-<span id="cb13-16"><a href="dnf-did-not-finish.html#cb13-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="fl">0.5</span>, <span class="at">hjust=</span><span class="dv">1</span>, <span class="at">size =</span> <span class="dv">12</span>),</span>
-<span id="cb13-17"><a href="dnf-did-not-finish.html#cb13-17" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
-<span id="cb13-18"><a href="dnf-did-not-finish.html#cb13-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">18</span>),</span>
-<span id="cb13-19"><a href="dnf-did-not-finish.html#cb13-19" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
-<span id="cb13-20"><a href="dnf-did-not-finish.html#cb13-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">14</span>))</span></code></pre></div>
-<p><img src="_main_files/figure-html/unnamed-chunk-10-1.png" width="960" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb222"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb222-1"><a href="dnf-did-not-finish.html#cb222-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(dnf.model<span class="fl">.2</span>, <span class="at">exp =</span> T) <span class="sc">%&gt;%</span></span>
+<span id="cb222-2"><a href="dnf-did-not-finish.html#cb222-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">term =</span> <span class="fu">str_remove</span>(term, <span class="st">&quot;Year&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb222-3"><a href="dnf-did-not-finish.html#cb222-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">separate</span>(term, <span class="at">sep =</span> <span class="st">&#39;:Circuit&#39;</span>, <span class="fu">c</span>(<span class="st">&quot;Year&quot;</span>, <span class="st">&quot;Circuit&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb222-4"><a href="dnf-did-not-finish.html#cb222-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Circuit <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&#39;monaco&#39;</span>, <span class="st">&#39;united-states&#39;</span>, <span class="st">&#39;great-britain&#39;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb222-5"><a href="dnf-did-not-finish.html#cb222-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(Year, estimate, <span class="at">group =</span> Circuit, <span class="at">col =</span> Circuit)) <span class="sc">+</span></span>
+<span id="cb222-6"><a href="dnf-did-not-finish.html#cb222-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb222-7"><a href="dnf-did-not-finish.html#cb222-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb222-8"><a href="dnf-did-not-finish.html#cb222-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb222-9"><a href="dnf-did-not-finish.html#cb222-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
+<span id="cb222-10"><a href="dnf-did-not-finish.html#cb222-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Year&#39;</span>,</span>
+<span id="cb222-11"><a href="dnf-did-not-finish.html#cb222-11" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;Yearly trend in DNF Probability&#39;</span>) <span class="sc">+</span></span>
+<span id="cb222-12"><a href="dnf-did-not-finish.html#cb222-12" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>()) <span class="sc">+</span></span>
+<span id="cb222-13"><a href="dnf-did-not-finish.html#cb222-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb222-14"><a href="dnf-did-not-finish.html#cb222-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
+<span id="cb222-15"><a href="dnf-did-not-finish.html#cb222-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
+<span id="cb222-16"><a href="dnf-did-not-finish.html#cb222-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="fl">0.5</span>, <span class="at">hjust=</span><span class="dv">1</span>, <span class="at">size =</span> <span class="dv">12</span>),</span>
+<span id="cb222-17"><a href="dnf-did-not-finish.html#cb222-17" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
+<span id="cb222-18"><a href="dnf-did-not-finish.html#cb222-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">18</span>),</span>
+<span id="cb222-19"><a href="dnf-did-not-finish.html#cb222-19" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
+<span id="cb222-20"><a href="dnf-did-not-finish.html#cb222-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">14</span>))</span></code></pre></div>
+<p><img src="_main_files/figure-html/unnamed-chunk-205-1.png" width="960" style="display: block; margin: auto;" /></p>
 <p>An alternative to fitting an estimate for each race-year combination is to model both the year and track estimates, but not as an interaction term.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="dnf-did-not-finish.html#cb14-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.3</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> Year <span class="sc">+</span> Circuit, <span class="at">data =</span> races_allyears_dnf,</span>
-<span id="cb14-2"><a href="dnf-did-not-finish.html#cb14-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb223"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb223-1"><a href="dnf-did-not-finish.html#cb223-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.3</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> Year <span class="sc">+</span> Circuit, <span class="at">data =</span> races_allyears_dnf,</span>
+<span id="cb223-2"><a href="dnf-did-not-finish.html#cb223-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span></code></pre></div>
 <p>As we can see in the figure below, this model assumes a consistent yearly effect and adjusts the probability estimate up or down based on the circuit. So, for that rainy 2015 U.S. Grand Prix, this model gives a more <em>sober</em> result.</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="dnf-did-not-finish.html#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">emmeans</span>(dnf.model<span class="fl">.3</span>, <span class="sc">~</span> Circuit <span class="sc">+</span> Year, <span class="at">type =</span> <span class="st">&#39;response&#39;</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb15-2"><a href="dnf-did-not-finish.html#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb15-3"><a href="dnf-did-not-finish.html#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Circuit <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&#39;monaco&#39;</span>, <span class="st">&#39;united-states&#39;</span>, <span class="st">&#39;great-britain&#39;</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb15-4"><a href="dnf-did-not-finish.html#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(Year, prob, <span class="at">group =</span> Circuit, <span class="at">col =</span> Circuit)) <span class="sc">+</span></span>
-<span id="cb15-5"><a href="dnf-did-not-finish.html#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
-<span id="cb15-6"><a href="dnf-did-not-finish.html#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
-<span id="cb15-7"><a href="dnf-did-not-finish.html#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb15-8"><a href="dnf-did-not-finish.html#cb15-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
-<span id="cb15-9"><a href="dnf-did-not-finish.html#cb15-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Year&#39;</span>,</span>
-<span id="cb15-10"><a href="dnf-did-not-finish.html#cb15-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;Yearly trend in DNF Probability&#39;</span>) <span class="sc">+</span></span>
-<span id="cb15-11"><a href="dnf-did-not-finish.html#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>())  <span class="sc">+</span></span>
-<span id="cb15-12"><a href="dnf-did-not-finish.html#cb15-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
-<span id="cb15-13"><a href="dnf-did-not-finish.html#cb15-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
-<span id="cb15-14"><a href="dnf-did-not-finish.html#cb15-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
-<span id="cb15-15"><a href="dnf-did-not-finish.html#cb15-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="fl">0.5</span>, <span class="at">hjust=</span><span class="dv">1</span>, <span class="at">size =</span> <span class="dv">12</span>),</span>
-<span id="cb15-16"><a href="dnf-did-not-finish.html#cb15-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
-<span id="cb15-17"><a href="dnf-did-not-finish.html#cb15-17" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">18</span>),</span>
-<span id="cb15-18"><a href="dnf-did-not-finish.html#cb15-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
-<span id="cb15-19"><a href="dnf-did-not-finish.html#cb15-19" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">14</span>))</span></code></pre></div>
-<p><img src="_main_files/figure-html/unnamed-chunk-12-1.png" width="960" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb224"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb224-1"><a href="dnf-did-not-finish.html#cb224-1" aria-hidden="true" tabindex="-1"></a><span class="fu">emmeans</span>(dnf.model<span class="fl">.3</span>, <span class="sc">~</span> Circuit <span class="sc">+</span> Year, <span class="at">type =</span> <span class="st">&#39;response&#39;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb224-2"><a href="dnf-did-not-finish.html#cb224-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb224-3"><a href="dnf-did-not-finish.html#cb224-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Circuit <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&#39;monaco&#39;</span>, <span class="st">&#39;united-states&#39;</span>, <span class="st">&#39;great-britain&#39;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb224-4"><a href="dnf-did-not-finish.html#cb224-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(Year, prob, <span class="at">group =</span> Circuit, <span class="at">col =</span> Circuit)) <span class="sc">+</span></span>
+<span id="cb224-5"><a href="dnf-did-not-finish.html#cb224-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb224-6"><a href="dnf-did-not-finish.html#cb224-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb224-7"><a href="dnf-did-not-finish.html#cb224-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb224-8"><a href="dnf-did-not-finish.html#cb224-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
+<span id="cb224-9"><a href="dnf-did-not-finish.html#cb224-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Year&#39;</span>,</span>
+<span id="cb224-10"><a href="dnf-did-not-finish.html#cb224-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;Yearly trend in DNF Probability&#39;</span>) <span class="sc">+</span></span>
+<span id="cb224-11"><a href="dnf-did-not-finish.html#cb224-11" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>())  <span class="sc">+</span></span>
+<span id="cb224-12"><a href="dnf-did-not-finish.html#cb224-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb224-13"><a href="dnf-did-not-finish.html#cb224-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
+<span id="cb224-14"><a href="dnf-did-not-finish.html#cb224-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
+<span id="cb224-15"><a href="dnf-did-not-finish.html#cb224-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="fl">0.5</span>, <span class="at">hjust=</span><span class="dv">1</span>, <span class="at">size =</span> <span class="dv">12</span>),</span>
+<span id="cb224-16"><a href="dnf-did-not-finish.html#cb224-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
+<span id="cb224-17"><a href="dnf-did-not-finish.html#cb224-17" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">18</span>),</span>
+<span id="cb224-18"><a href="dnf-did-not-finish.html#cb224-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
+<span id="cb224-19"><a href="dnf-did-not-finish.html#cb224-19" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">14</span>))</span></code></pre></div>
+<p><img src="_main_files/figure-html/unnamed-chunk-207-1.png" width="960" style="display: block; margin: auto;" /></p>
 </div>
 <div id="differences-by-constructor" class="section level2 hasAnchor" number="7.3">
 <h2><span class="header-section-number">7.3</span> Differences by constructor<a href="dnf-did-not-finish.html#differences-by-constructor" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>We could use a similar approach to estimate the probability of a DNF by constructor. One could hypothesize that the car with the best power unit, Mercedes, could run the engine at a more conservative mode, thus reducing the risk of failure. Let’s see if the data shows any significant shifts in DNF probability by constructor.</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="dnf-did-not-finish.html#cb16-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.4</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> Car, <span class="at">data =</span> races_allyears_dnf,</span>
-<span id="cb16-2"><a href="dnf-did-not-finish.html#cb16-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span></code></pre></div>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="dnf-did-not-finish.html#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">emmeans</span>(dnf.model<span class="fl">.4</span>, <span class="sc">~</span> Car, <span class="at">type =</span> <span class="st">&#39;response&#39;</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb17-2"><a href="dnf-did-not-finish.html#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb17-3"><a href="dnf-did-not-finish.html#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(prob, <span class="fu">fct_reorder</span>(Car, <span class="fu">desc</span>(prob)))) <span class="sc">+</span></span>
-<span id="cb17-4"><a href="dnf-did-not-finish.html#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
-<span id="cb17-5"><a href="dnf-did-not-finish.html#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
-<span id="cb17-6"><a href="dnf-did-not-finish.html#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb17-7"><a href="dnf-did-not-finish.html#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
-<span id="cb17-8"><a href="dnf-did-not-finish.html#cb17-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Constructor&#39;</span>,</span>
-<span id="cb17-9"><a href="dnf-did-not-finish.html#cb17-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;DNF Probability by Constructor&#39;</span>) <span class="sc">+</span></span>
-<span id="cb17-10"><a href="dnf-did-not-finish.html#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>()) <span class="sc">+</span></span>
-<span id="cb17-11"><a href="dnf-did-not-finish.html#cb17-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>))</span></code></pre></div>
-<p><img src="_main_files/figure-html/unnamed-chunk-14-1.png" width="960" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb225"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb225-1"><a href="dnf-did-not-finish.html#cb225-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.4</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> Car, <span class="at">data =</span> races_allyears_dnf,</span>
+<span id="cb225-2"><a href="dnf-did-not-finish.html#cb225-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb226"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb226-1"><a href="dnf-did-not-finish.html#cb226-1" aria-hidden="true" tabindex="-1"></a><span class="fu">emmeans</span>(dnf.model<span class="fl">.4</span>, <span class="sc">~</span> Car, <span class="at">type =</span> <span class="st">&#39;response&#39;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb226-2"><a href="dnf-did-not-finish.html#cb226-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb226-3"><a href="dnf-did-not-finish.html#cb226-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(prob, <span class="fu">fct_reorder</span>(Car, <span class="fu">desc</span>(prob)))) <span class="sc">+</span></span>
+<span id="cb226-4"><a href="dnf-did-not-finish.html#cb226-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb226-5"><a href="dnf-did-not-finish.html#cb226-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb226-6"><a href="dnf-did-not-finish.html#cb226-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb226-7"><a href="dnf-did-not-finish.html#cb226-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
+<span id="cb226-8"><a href="dnf-did-not-finish.html#cb226-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Constructor&#39;</span>,</span>
+<span id="cb226-9"><a href="dnf-did-not-finish.html#cb226-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;DNF Probability by Constructor&#39;</span>) <span class="sc">+</span></span>
+<span id="cb226-10"><a href="dnf-did-not-finish.html#cb226-10" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>()) <span class="sc">+</span></span>
+<span id="cb226-11"><a href="dnf-did-not-finish.html#cb226-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>))</span></code></pre></div>
+<p><img src="_main_files/figure-html/unnamed-chunk-209-1.png" width="960" style="display: block; margin: auto;" /></p>
 <p>There certainly appears to be some variability in DNF probability across the various constructors. During the Turbo-hybrid era, Mercedes unquestionably had the best power unit (overall). And according to this data, Mercedes also had the lowest probability of a DNF from 2014 to 2023 (Red Bull was quite reliable in 2023). In fact, McLaren using a Mercedes power unit had the third lowest DNF probability. Does this vary by year?</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="dnf-did-not-finish.html#cb18-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.5</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> Car<span class="sc">:</span>Year, <span class="at">data =</span> races_allyears_dnf,</span>
-<span id="cb18-2"><a href="dnf-did-not-finish.html#cb18-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb227"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb227-1"><a href="dnf-did-not-finish.html#cb227-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.5</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> Car<span class="sc">:</span>Year, <span class="at">data =</span> races_allyears_dnf,</span>
+<span id="cb227-2"><a href="dnf-did-not-finish.html#cb227-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span></code></pre></div>
 <p>After fitting the model, I’ll focus on the top 3 teams over this ten year period: Mercedes, Ferrari, and Red Bull. It looks like Mercedes had consistently low DNF rates, while Red Bull experienced an improvement over the last few years.</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="dnf-did-not-finish.html#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">emmeans</span>(dnf.model<span class="fl">.5</span>, <span class="sc">~</span> Car<span class="sc">:</span>Year, <span class="at">type =</span> <span class="st">&#39;response&#39;</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb19-2"><a href="dnf-did-not-finish.html#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb19-3"><a href="dnf-did-not-finish.html#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(Year),</span>
-<span id="cb19-4"><a href="dnf-did-not-finish.html#cb19-4" aria-hidden="true" tabindex="-1"></a>         <span class="sc">!</span><span class="fu">is.na</span>(prob),</span>
-<span id="cb19-5"><a href="dnf-did-not-finish.html#cb19-5" aria-hidden="true" tabindex="-1"></a>         Car <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&#39;Mercedes&#39;</span>, <span class="st">&#39;Ferrari&#39;</span>, </span>
-<span id="cb19-6"><a href="dnf-did-not-finish.html#cb19-6" aria-hidden="true" tabindex="-1"></a>                            <span class="st">&#39;Red Bull Racing Honda RBPT&#39;</span>, <span class="st">&#39;Red Bull Racing RBPT&#39;</span>, <span class="st">&#39;Red Bull Racing Renault&#39;</span>, <span class="st">&#39;Red Bull Racing Honda&#39;</span>, <span class="st">&#39;Red Bull Racing TAG Heuer&#39;</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb19-7"><a href="dnf-did-not-finish.html#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">constructor =</span> <span class="fu">case_when</span>(</span>
-<span id="cb19-8"><a href="dnf-did-not-finish.html#cb19-8" aria-hidden="true" tabindex="-1"></a>    Car <span class="sc">!=</span> <span class="st">&#39;Mercedes&#39;</span> <span class="sc">&amp;</span> Car <span class="sc">!=</span> <span class="st">&#39;Ferrari&#39;</span> <span class="sc">~</span> <span class="st">&#39;Red Bull&#39;</span>, </span>
-<span id="cb19-9"><a href="dnf-did-not-finish.html#cb19-9" aria-hidden="true" tabindex="-1"></a>    Car <span class="sc">==</span> <span class="st">&#39;Mercedes&#39;</span> <span class="sc">~</span> <span class="st">&#39;Mercedes&#39;</span>, </span>
-<span id="cb19-10"><a href="dnf-did-not-finish.html#cb19-10" aria-hidden="true" tabindex="-1"></a>    Car <span class="sc">==</span> <span class="st">&#39;Ferrari&#39;</span> <span class="sc">~</span> <span class="st">&#39;Ferrari&#39;</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb19-11"><a href="dnf-did-not-finish.html#cb19-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(Year, prob, <span class="at">group =</span> constructor, <span class="at">col =</span> constructor)) <span class="sc">+</span></span>
-<span id="cb19-12"><a href="dnf-did-not-finish.html#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_path</span>() <span class="sc">+</span></span>
-<span id="cb19-13"><a href="dnf-did-not-finish.html#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
-<span id="cb19-14"><a href="dnf-did-not-finish.html#cb19-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb19-15"><a href="dnf-did-not-finish.html#cb19-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
-<span id="cb19-16"><a href="dnf-did-not-finish.html#cb19-16" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="st">&#39;Constructor&#39;</span>,</span>
-<span id="cb19-17"><a href="dnf-did-not-finish.html#cb19-17" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;DNF Probability by Year &amp; Constructor&#39;</span>) <span class="sc">+</span></span>
-<span id="cb19-18"><a href="dnf-did-not-finish.html#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>()) <span class="sc">+</span></span>
-<span id="cb19-19"><a href="dnf-did-not-finish.html#cb19-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
-<span id="cb19-20"><a href="dnf-did-not-finish.html#cb19-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
-<span id="cb19-21"><a href="dnf-did-not-finish.html#cb19-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
-<span id="cb19-22"><a href="dnf-did-not-finish.html#cb19-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="fl">0.5</span>, <span class="at">hjust=</span><span class="dv">1</span>, <span class="at">size =</span> <span class="dv">12</span>),</span>
-<span id="cb19-23"><a href="dnf-did-not-finish.html#cb19-23" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
-<span id="cb19-24"><a href="dnf-did-not-finish.html#cb19-24" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">18</span>),</span>
-<span id="cb19-25"><a href="dnf-did-not-finish.html#cb19-25" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
-<span id="cb19-26"><a href="dnf-did-not-finish.html#cb19-26" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">14</span>))</span></code></pre></div>
-<p><img src="_main_files/figure-html/unnamed-chunk-16-1.png" width="960" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb228"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb228-1"><a href="dnf-did-not-finish.html#cb228-1" aria-hidden="true" tabindex="-1"></a><span class="fu">emmeans</span>(dnf.model<span class="fl">.5</span>, <span class="sc">~</span> Car<span class="sc">:</span>Year, <span class="at">type =</span> <span class="st">&#39;response&#39;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb228-2"><a href="dnf-did-not-finish.html#cb228-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb228-3"><a href="dnf-did-not-finish.html#cb228-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(Year),</span>
+<span id="cb228-4"><a href="dnf-did-not-finish.html#cb228-4" aria-hidden="true" tabindex="-1"></a>         <span class="sc">!</span><span class="fu">is.na</span>(prob),</span>
+<span id="cb228-5"><a href="dnf-did-not-finish.html#cb228-5" aria-hidden="true" tabindex="-1"></a>         Car <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&#39;Mercedes&#39;</span>, <span class="st">&#39;Ferrari&#39;</span>, </span>
+<span id="cb228-6"><a href="dnf-did-not-finish.html#cb228-6" aria-hidden="true" tabindex="-1"></a>                            <span class="st">&#39;Red Bull Racing Honda RBPT&#39;</span>, <span class="st">&#39;Red Bull Racing RBPT&#39;</span>, <span class="st">&#39;Red Bull Racing Renault&#39;</span>, <span class="st">&#39;Red Bull Racing Honda&#39;</span>, <span class="st">&#39;Red Bull Racing TAG Heuer&#39;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb228-7"><a href="dnf-did-not-finish.html#cb228-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">constructor =</span> <span class="fu">case_when</span>(</span>
+<span id="cb228-8"><a href="dnf-did-not-finish.html#cb228-8" aria-hidden="true" tabindex="-1"></a>    Car <span class="sc">!=</span> <span class="st">&#39;Mercedes&#39;</span> <span class="sc">&amp;</span> Car <span class="sc">!=</span> <span class="st">&#39;Ferrari&#39;</span> <span class="sc">~</span> <span class="st">&#39;Red Bull&#39;</span>, </span>
+<span id="cb228-9"><a href="dnf-did-not-finish.html#cb228-9" aria-hidden="true" tabindex="-1"></a>    Car <span class="sc">==</span> <span class="st">&#39;Mercedes&#39;</span> <span class="sc">~</span> <span class="st">&#39;Mercedes&#39;</span>, </span>
+<span id="cb228-10"><a href="dnf-did-not-finish.html#cb228-10" aria-hidden="true" tabindex="-1"></a>    Car <span class="sc">==</span> <span class="st">&#39;Ferrari&#39;</span> <span class="sc">~</span> <span class="st">&#39;Ferrari&#39;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb228-11"><a href="dnf-did-not-finish.html#cb228-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(Year, prob, <span class="at">group =</span> constructor, <span class="at">col =</span> constructor)) <span class="sc">+</span></span>
+<span id="cb228-12"><a href="dnf-did-not-finish.html#cb228-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_path</span>() <span class="sc">+</span></span>
+<span id="cb228-13"><a href="dnf-did-not-finish.html#cb228-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb228-14"><a href="dnf-did-not-finish.html#cb228-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb228-15"><a href="dnf-did-not-finish.html#cb228-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
+<span id="cb228-16"><a href="dnf-did-not-finish.html#cb228-16" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="st">&#39;Constructor&#39;</span>,</span>
+<span id="cb228-17"><a href="dnf-did-not-finish.html#cb228-17" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;DNF Probability by Year &amp; Constructor&#39;</span>) <span class="sc">+</span></span>
+<span id="cb228-18"><a href="dnf-did-not-finish.html#cb228-18" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>()) <span class="sc">+</span></span>
+<span id="cb228-19"><a href="dnf-did-not-finish.html#cb228-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb228-20"><a href="dnf-did-not-finish.html#cb228-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
+<span id="cb228-21"><a href="dnf-did-not-finish.html#cb228-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
+<span id="cb228-22"><a href="dnf-did-not-finish.html#cb228-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="fl">0.5</span>, <span class="at">hjust=</span><span class="dv">1</span>, <span class="at">size =</span> <span class="dv">12</span>),</span>
+<span id="cb228-23"><a href="dnf-did-not-finish.html#cb228-23" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
+<span id="cb228-24"><a href="dnf-did-not-finish.html#cb228-24" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">18</span>),</span>
+<span id="cb228-25"><a href="dnf-did-not-finish.html#cb228-25" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
+<span id="cb228-26"><a href="dnf-did-not-finish.html#cb228-26" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">14</span>))</span></code></pre></div>
+<p><img src="_main_files/figure-html/unnamed-chunk-211-1.png" width="960" style="display: block; margin: auto;" /></p>
 <p>Here’s a look at each all teams, separated by year:</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="dnf-did-not-finish.html#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidytext)</span>
-<span id="cb20-2"><a href="dnf-did-not-finish.html#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-3"><a href="dnf-did-not-finish.html#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-4"><a href="dnf-did-not-finish.html#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="fu">emmeans</span>(dnf.model<span class="fl">.5</span>, <span class="sc">~</span> Car<span class="sc">:</span>Year, <span class="at">type =</span> <span class="st">&#39;response&#39;</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb20-5"><a href="dnf-did-not-finish.html#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb20-6"><a href="dnf-did-not-finish.html#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(prob)) <span class="sc">%&gt;%</span> </span>
-<span id="cb20-7"><a href="dnf-did-not-finish.html#cb20-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Year) <span class="sc">%&gt;%</span></span>
-<span id="cb20-8"><a href="dnf-did-not-finish.html#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">rank =</span> <span class="fu">rank</span>(prob)) <span class="sc">%&gt;%</span></span>
-<span id="cb20-9"><a href="dnf-did-not-finish.html#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb20-10"><a href="dnf-did-not-finish.html#cb20-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">constructor =</span> <span class="fu">reorder_within</span>(Car, <span class="fu">desc</span>(rank), Year)) <span class="sc">%&gt;%</span></span>
-<span id="cb20-11"><a href="dnf-did-not-finish.html#cb20-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(prob, constructor)) <span class="sc">+</span></span>
-<span id="cb20-12"><a href="dnf-did-not-finish.html#cb20-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
-<span id="cb20-13"><a href="dnf-did-not-finish.html#cb20-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
-<span id="cb20-14"><a href="dnf-did-not-finish.html#cb20-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb20-15"><a href="dnf-did-not-finish.html#cb20-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
-<span id="cb20-16"><a href="dnf-did-not-finish.html#cb20-16" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Constructor&#39;</span>,</span>
-<span id="cb20-17"><a href="dnf-did-not-finish.html#cb20-17" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;DNF Probability by Constructor&#39;</span>) <span class="sc">+</span></span>
-<span id="cb20-18"><a href="dnf-did-not-finish.html#cb20-18" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>()) <span class="sc">+</span></span>
-<span id="cb20-19"><a href="dnf-did-not-finish.html#cb20-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>)) <span class="sc">+</span></span>
-<span id="cb20-20"><a href="dnf-did-not-finish.html#cb20-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> Year, <span class="at">scales =</span> <span class="st">&#39;free_y&#39;</span>, <span class="at">ncol =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
-<span id="cb20-21"><a href="dnf-did-not-finish.html#cb20-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_reordered</span>()</span></code></pre></div>
-<p><img src="_main_files/figure-html/unnamed-chunk-17-1.png" width="960" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb229"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb229-1"><a href="dnf-did-not-finish.html#cb229-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidytext)</span>
+<span id="cb229-2"><a href="dnf-did-not-finish.html#cb229-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb229-3"><a href="dnf-did-not-finish.html#cb229-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb229-4"><a href="dnf-did-not-finish.html#cb229-4" aria-hidden="true" tabindex="-1"></a><span class="fu">emmeans</span>(dnf.model<span class="fl">.5</span>, <span class="sc">~</span> Car<span class="sc">:</span>Year, <span class="at">type =</span> <span class="st">&#39;response&#39;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb229-5"><a href="dnf-did-not-finish.html#cb229-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb229-6"><a href="dnf-did-not-finish.html#cb229-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(prob)) <span class="sc">%&gt;%</span> </span>
+<span id="cb229-7"><a href="dnf-did-not-finish.html#cb229-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Year) <span class="sc">%&gt;%</span></span>
+<span id="cb229-8"><a href="dnf-did-not-finish.html#cb229-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">rank =</span> <span class="fu">rank</span>(prob)) <span class="sc">%&gt;%</span></span>
+<span id="cb229-9"><a href="dnf-did-not-finish.html#cb229-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb229-10"><a href="dnf-did-not-finish.html#cb229-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">constructor =</span> <span class="fu">reorder_within</span>(Car, <span class="fu">desc</span>(rank), Year)) <span class="sc">%&gt;%</span></span>
+<span id="cb229-11"><a href="dnf-did-not-finish.html#cb229-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(prob, constructor)) <span class="sc">+</span></span>
+<span id="cb229-12"><a href="dnf-did-not-finish.html#cb229-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb229-13"><a href="dnf-did-not-finish.html#cb229-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb229-14"><a href="dnf-did-not-finish.html#cb229-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb229-15"><a href="dnf-did-not-finish.html#cb229-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
+<span id="cb229-16"><a href="dnf-did-not-finish.html#cb229-16" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Constructor&#39;</span>,</span>
+<span id="cb229-17"><a href="dnf-did-not-finish.html#cb229-17" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;DNF Probability by Constructor&#39;</span>) <span class="sc">+</span></span>
+<span id="cb229-18"><a href="dnf-did-not-finish.html#cb229-18" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>()) <span class="sc">+</span></span>
+<span id="cb229-19"><a href="dnf-did-not-finish.html#cb229-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>)) <span class="sc">+</span></span>
+<span id="cb229-20"><a href="dnf-did-not-finish.html#cb229-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> Year, <span class="at">scales =</span> <span class="st">&#39;free_y&#39;</span>, <span class="at">ncol =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb229-21"><a href="dnf-did-not-finish.html#cb229-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_reordered</span>()</span></code></pre></div>
+<p><img src="_main_files/figure-html/unnamed-chunk-212-1.png" width="960" style="display: block; margin: auto;" /></p>
 </div>
 <div id="dnfs-by-race-of-the-season" class="section level2 hasAnchor" number="7.4">
 <h2><span class="header-section-number">7.4</span> DNFs by race of the season<a href="dnf-did-not-finish.html#dnfs-by-race-of-the-season" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Another possible explanatory variable of DNFs is race number of the season. There is probably more uncertainty about the engineering of the car at the beginning of a season. So, one could hypothesize that the probability of DNF’ing decreases over the course of a season. Let’s try and model this idea.</p>
 <p>First, we’ll need to label each race in chronological order. For example, Bahrain was race #1 in 2021, 2022, and 2023.</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="dnf-did-not-finish.html#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Number each race during each of our ten years</span></span>
-<span id="cb21-2"><a href="dnf-did-not-finish.html#cb21-2" aria-hidden="true" tabindex="-1"></a>circuit_numbers <span class="ot">&lt;-</span> races_allyears_dnf <span class="sc">%&gt;%</span> </span>
-<span id="cb21-3"><a href="dnf-did-not-finish.html#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(Year, Circuit) <span class="sc">%&gt;%</span></span>
-<span id="cb21-4"><a href="dnf-did-not-finish.html#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Year) <span class="sc">%&gt;%</span> </span>
-<span id="cb21-5"><a href="dnf-did-not-finish.html#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">race_number =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">n</span>())</span>
-<span id="cb21-6"><a href="dnf-did-not-finish.html#cb21-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-7"><a href="dnf-did-not-finish.html#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Add the race number to our race result dataframe</span></span>
-<span id="cb21-8"><a href="dnf-did-not-finish.html#cb21-8" aria-hidden="true" tabindex="-1"></a>races_allyears_dnf_numbered <span class="ot">&lt;-</span> races_allyears_dnf <span class="sc">%&gt;%</span></span>
-<span id="cb21-9"><a href="dnf-did-not-finish.html#cb21-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(circuit_numbers, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;Year&#39;</span>, <span class="st">&#39;Circuit&#39;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb230"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb230-1"><a href="dnf-did-not-finish.html#cb230-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Number each race during each of our ten years</span></span>
+<span id="cb230-2"><a href="dnf-did-not-finish.html#cb230-2" aria-hidden="true" tabindex="-1"></a>circuit_numbers <span class="ot">&lt;-</span> races_allyears_dnf <span class="sc">%&gt;%</span> </span>
+<span id="cb230-3"><a href="dnf-did-not-finish.html#cb230-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(Year, Circuit) <span class="sc">%&gt;%</span></span>
+<span id="cb230-4"><a href="dnf-did-not-finish.html#cb230-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Year) <span class="sc">%&gt;%</span> </span>
+<span id="cb230-5"><a href="dnf-did-not-finish.html#cb230-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">race_number =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">n</span>())</span>
+<span id="cb230-6"><a href="dnf-did-not-finish.html#cb230-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb230-7"><a href="dnf-did-not-finish.html#cb230-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Add the race number to our race result dataframe</span></span>
+<span id="cb230-8"><a href="dnf-did-not-finish.html#cb230-8" aria-hidden="true" tabindex="-1"></a>races_allyears_dnf_numbered <span class="ot">&lt;-</span> races_allyears_dnf <span class="sc">%&gt;%</span></span>
+<span id="cb230-9"><a href="dnf-did-not-finish.html#cb230-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(circuit_numbers, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;Year&#39;</span>, <span class="st">&#39;Circuit&#39;</span>))</span></code></pre></div>
 <p>We can fit a model to our data using race number of the season as a single predictor variable.</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="dnf-did-not-finish.html#cb22-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.6</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> race_number, <span class="at">data =</span> races_allyears_dnf_numbered,</span>
-<span id="cb22-2"><a href="dnf-did-not-finish.html#cb22-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb231"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb231-1"><a href="dnf-did-not-finish.html#cb231-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.6</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> race_number, <span class="at">data =</span> races_allyears_dnf_numbered,</span>
+<span id="cb231-2"><a href="dnf-did-not-finish.html#cb231-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span></code></pre></div>
 <p>If we look at the summary output below, we can see that the p-value is &gt; 0.05, demonstrating that this is not a statistically significant at the 0.05 level. What does this mean? See the text box below for more detail and resouces on p-values.</p>
 <p><br>
 <br></p>
@@ -1042,8 +1038,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <p><br>
 <br></p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="dnf-did-not-finish.html#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># print summary</span></span>
-<span id="cb23-2"><a href="dnf-did-not-finish.html#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(dnf.model<span class="fl">.6</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb232"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb232-1"><a href="dnf-did-not-finish.html#cb232-1" aria-hidden="true" tabindex="-1"></a><span class="co"># print summary</span></span>
+<span id="cb232-2"><a href="dnf-did-not-finish.html#cb232-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(dnf.model<span class="fl">.6</span>)</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## glm(formula = DNF ~ race_number, family = binomial(link = &quot;logit&quot;), 
@@ -1067,50 +1063,50 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ## AIC: 3786
 ## 
 ## Number of Fisher Scoring iterations: 4</code></pre>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="dnf-did-not-finish.html#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># exponentiate the coefficients</span></span>
-<span id="cb25-2"><a href="dnf-did-not-finish.html#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">exp</span>(<span class="fu">cbind</span>(<span class="at">OR =</span> <span class="fu">coef</span>(dnf.model<span class="fl">.6</span>), <span class="fu">confint</span>(dnf.model<span class="fl">.6</span>)))</span></code></pre></div>
+<div class="sourceCode" id="cb234"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb234-1"><a href="dnf-did-not-finish.html#cb234-1" aria-hidden="true" tabindex="-1"></a><span class="co"># exponentiate the coefficients</span></span>
+<span id="cb234-2"><a href="dnf-did-not-finish.html#cb234-2" aria-hidden="true" tabindex="-1"></a><span class="fu">exp</span>(<span class="fu">cbind</span>(<span class="at">OR =</span> <span class="fu">coef</span>(dnf.model<span class="fl">.6</span>), <span class="fu">confint</span>(dnf.model<span class="fl">.6</span>)))</span></code></pre></div>
 <pre><code>##                    OR     2.5 %    97.5 %
 ## (Intercept) 0.2358199 0.2003353 0.2767322
 ## race_number 0.9875320 0.9738144 1.0013839</code></pre>
 <p>So, let’s just accept that these results indicate a non-significant predictor in race number. What could cause that? For one, DNFs in this dataset include both crashes and mechanical failures. Obviously crashes should be more random, while mechanical failures may not be.</p>
 <p>Nonetheless, this <em>is</em> a book about data visualization. So… let’s at least plot these results.</p>
 <p>First, I’ll need to tidy of some model predictions for this model.</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="dnf-did-not-finish.html#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># define the new data</span></span>
-<span id="cb27-2"><a href="dnf-did-not-finish.html#cb27-2" aria-hidden="true" tabindex="-1"></a>new.data.logreg <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">race_number =</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">22</span>, <span class="dv">1</span>))</span>
-<span id="cb27-3"><a href="dnf-did-not-finish.html#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-4"><a href="dnf-did-not-finish.html#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="co"># compute the fitted lines and SE&#39;s</span></span>
-<span id="cb27-5"><a href="dnf-did-not-finish.html#cb27-5" aria-hidden="true" tabindex="-1"></a>predictions.model6 <span class="ot">&lt;-</span>  <span class="fu">predict</span>(dnf.model<span class="fl">.6</span>,</span>
-<span id="cb27-6"><a href="dnf-did-not-finish.html#cb27-6" aria-hidden="true" tabindex="-1"></a>                               <span class="at">newdata =</span> new.data.logreg,</span>
-<span id="cb27-7"><a href="dnf-did-not-finish.html#cb27-7" aria-hidden="true" tabindex="-1"></a>                               <span class="at">type =</span> <span class="st">&quot;link&quot;</span>,</span>
-<span id="cb27-8"><a href="dnf-did-not-finish.html#cb27-8" aria-hidden="true" tabindex="-1"></a>                               <span class="at">se.fit =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb27-9"><a href="dnf-did-not-finish.html#cb27-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb27-10"><a href="dnf-did-not-finish.html#cb27-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">ll =</span> fit <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> se.fit,</span>
-<span id="cb27-11"><a href="dnf-did-not-finish.html#cb27-11" aria-hidden="true" tabindex="-1"></a>         <span class="at">ul =</span> fit <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> se.fit) <span class="sc">%&gt;%</span></span>
-<span id="cb27-12"><a href="dnf-did-not-finish.html#cb27-12" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>( <span class="sc">-</span>se.fit) <span class="sc">%&gt;%</span> </span>
-<span id="cb27-13"><a href="dnf-did-not-finish.html#cb27-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate_all</span>(plogis) <span class="sc">%&gt;%</span></span>
-<span id="cb27-14"><a href="dnf-did-not-finish.html#cb27-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_cols</span>(new.data.logreg)</span></code></pre></div>
+<div class="sourceCode" id="cb236"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb236-1"><a href="dnf-did-not-finish.html#cb236-1" aria-hidden="true" tabindex="-1"></a><span class="co"># define the new data</span></span>
+<span id="cb236-2"><a href="dnf-did-not-finish.html#cb236-2" aria-hidden="true" tabindex="-1"></a>new.data.logreg <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">race_number =</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">22</span>, <span class="dv">1</span>))</span>
+<span id="cb236-3"><a href="dnf-did-not-finish.html#cb236-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb236-4"><a href="dnf-did-not-finish.html#cb236-4" aria-hidden="true" tabindex="-1"></a><span class="co"># compute the fitted lines and SE&#39;s</span></span>
+<span id="cb236-5"><a href="dnf-did-not-finish.html#cb236-5" aria-hidden="true" tabindex="-1"></a>predictions.model6 <span class="ot">&lt;-</span>  <span class="fu">predict</span>(dnf.model<span class="fl">.6</span>,</span>
+<span id="cb236-6"><a href="dnf-did-not-finish.html#cb236-6" aria-hidden="true" tabindex="-1"></a>                               <span class="at">newdata =</span> new.data.logreg,</span>
+<span id="cb236-7"><a href="dnf-did-not-finish.html#cb236-7" aria-hidden="true" tabindex="-1"></a>                               <span class="at">type =</span> <span class="st">&quot;link&quot;</span>,</span>
+<span id="cb236-8"><a href="dnf-did-not-finish.html#cb236-8" aria-hidden="true" tabindex="-1"></a>                               <span class="at">se.fit =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb236-9"><a href="dnf-did-not-finish.html#cb236-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb236-10"><a href="dnf-did-not-finish.html#cb236-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">ll =</span> fit <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> se.fit,</span>
+<span id="cb236-11"><a href="dnf-did-not-finish.html#cb236-11" aria-hidden="true" tabindex="-1"></a>         <span class="at">ul =</span> fit <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> se.fit) <span class="sc">%&gt;%</span></span>
+<span id="cb236-12"><a href="dnf-did-not-finish.html#cb236-12" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>( <span class="sc">-</span>se.fit) <span class="sc">%&gt;%</span> </span>
+<span id="cb236-13"><a href="dnf-did-not-finish.html#cb236-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate_all</span>(plogis) <span class="sc">%&gt;%</span></span>
+<span id="cb236-14"><a href="dnf-did-not-finish.html#cb236-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_cols</span>(new.data.logreg)</span></code></pre></div>
 <p>And then, we can plot observed data along with the logistic regression model fit line using this code:</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="dnf-did-not-finish.html#cb28-1" aria-hidden="true" tabindex="-1"></a>predictions.model6 <span class="sc">%&gt;%</span> </span>
-<span id="cb28-2"><a href="dnf-did-not-finish.html#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> race_number)) <span class="sc">+</span></span>
-<span id="cb28-3"><a href="dnf-did-not-finish.html#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> ll, <span class="at">ymax =</span> ul),</span>
-<span id="cb28-4"><a href="dnf-did-not-finish.html#cb28-4" aria-hidden="true" tabindex="-1"></a>              <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb28-5"><a href="dnf-did-not-finish.html#cb28-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> fit)) <span class="sc">+</span></span>
-<span id="cb28-6"><a href="dnf-did-not-finish.html#cb28-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_dots</span>(<span class="at">data =</span> races_allyears_dnf_numbered,</span>
-<span id="cb28-7"><a href="dnf-did-not-finish.html#cb28-7" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">y =</span> DNF, </span>
-<span id="cb28-8"><a href="dnf-did-not-finish.html#cb28-8" aria-hidden="true" tabindex="-1"></a>                <span class="at">side =</span> <span class="fu">ifelse</span>(DNF <span class="sc">==</span> <span class="dv">0</span>, <span class="st">&quot;top&quot;</span>, <span class="st">&quot;bottom&quot;</span>), <span class="at">col=</span> <span class="fu">factor</span>(DNF)),</span>
-<span id="cb28-9"><a href="dnf-did-not-finish.html#cb28-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">scale =</span> <span class="fl">0.25</span>, <span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.1</span>, <span class="at">show.legend =</span> T) <span class="sc">+</span></span>
-<span id="cb28-10"><a href="dnf-did-not-finish.html#cb28-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">0</span>),<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&quot;firebrick4&quot;</span>, <span class="st">&quot;darkgrey&quot;</span>)) <span class="sc">+</span></span>
-<span id="cb28-11"><a href="dnf-did-not-finish.html#cb28-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="st">&quot;Probability of a DNF&quot;</span>,</span>
-<span id="cb28-12"><a href="dnf-did-not-finish.html#cb28-12" aria-hidden="true" tabindex="-1"></a>                     <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
-<span id="cb28-13"><a href="dnf-did-not-finish.html#cb28-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&#39;Race number of the season&#39;</span>,</span>
-<span id="cb28-14"><a href="dnf-did-not-finish.html#cb28-14" aria-hidden="true" tabindex="-1"></a>       <span class="at">color=</span><span class="st">&quot;DNF = 1 </span><span class="sc">\n</span><span class="st">Race Finish = 0&quot;</span>,</span>
-<span id="cb28-15"><a href="dnf-did-not-finish.html#cb28-15" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;Probability of DNF by race number of a season&#39;</span>,</span>
-<span id="cb28-16"><a href="dnf-did-not-finish.html#cb28-16" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;All Grands Prix: 2014 - 2023&#39;</span>) <span class="sc">+</span></span>
-<span id="cb28-17"><a href="dnf-did-not-finish.html#cb28-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">colour =</span> <span class="fu">guide_legend</span>(<span class="at">override.aes =</span> <span class="fu">list</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="fl">0.5</span>))) <span class="sc">+</span></span>
-<span id="cb28-18"><a href="dnf-did-not-finish.html#cb28-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb28-19"><a href="dnf-did-not-finish.html#cb28-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>),</span>
-<span id="cb28-20"><a href="dnf-did-not-finish.html#cb28-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>))</span></code></pre></div>
-<p><img src="_main_files/figure-html/unnamed-chunk-22-1.png" width="960" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb237"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb237-1"><a href="dnf-did-not-finish.html#cb237-1" aria-hidden="true" tabindex="-1"></a>predictions.model6 <span class="sc">%&gt;%</span> </span>
+<span id="cb237-2"><a href="dnf-did-not-finish.html#cb237-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> race_number)) <span class="sc">+</span></span>
+<span id="cb237-3"><a href="dnf-did-not-finish.html#cb237-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> ll, <span class="at">ymax =</span> ul),</span>
+<span id="cb237-4"><a href="dnf-did-not-finish.html#cb237-4" aria-hidden="true" tabindex="-1"></a>              <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb237-5"><a href="dnf-did-not-finish.html#cb237-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> fit)) <span class="sc">+</span></span>
+<span id="cb237-6"><a href="dnf-did-not-finish.html#cb237-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_dots</span>(<span class="at">data =</span> races_allyears_dnf_numbered,</span>
+<span id="cb237-7"><a href="dnf-did-not-finish.html#cb237-7" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">y =</span> DNF, </span>
+<span id="cb237-8"><a href="dnf-did-not-finish.html#cb237-8" aria-hidden="true" tabindex="-1"></a>                <span class="at">side =</span> <span class="fu">ifelse</span>(DNF <span class="sc">==</span> <span class="dv">0</span>, <span class="st">&quot;top&quot;</span>, <span class="st">&quot;bottom&quot;</span>), <span class="at">col=</span> <span class="fu">factor</span>(DNF)),</span>
+<span id="cb237-9"><a href="dnf-did-not-finish.html#cb237-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">scale =</span> <span class="fl">0.25</span>, <span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.1</span>, <span class="at">show.legend =</span> T) <span class="sc">+</span></span>
+<span id="cb237-10"><a href="dnf-did-not-finish.html#cb237-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">0</span>),<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&quot;firebrick4&quot;</span>, <span class="st">&quot;darkgrey&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb237-11"><a href="dnf-did-not-finish.html#cb237-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="st">&quot;Probability of a DNF&quot;</span>,</span>
+<span id="cb237-12"><a href="dnf-did-not-finish.html#cb237-12" aria-hidden="true" tabindex="-1"></a>                     <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb237-13"><a href="dnf-did-not-finish.html#cb237-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&#39;Race number of the season&#39;</span>,</span>
+<span id="cb237-14"><a href="dnf-did-not-finish.html#cb237-14" aria-hidden="true" tabindex="-1"></a>       <span class="at">color=</span><span class="st">&quot;DNF = 1 </span><span class="sc">\n</span><span class="st">Race Finish = 0&quot;</span>,</span>
+<span id="cb237-15"><a href="dnf-did-not-finish.html#cb237-15" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;Probability of DNF by race number of a season&#39;</span>,</span>
+<span id="cb237-16"><a href="dnf-did-not-finish.html#cb237-16" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;All Grands Prix: 2014 - 2023&#39;</span>) <span class="sc">+</span></span>
+<span id="cb237-17"><a href="dnf-did-not-finish.html#cb237-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">colour =</span> <span class="fu">guide_legend</span>(<span class="at">override.aes =</span> <span class="fu">list</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="fl">0.5</span>))) <span class="sc">+</span></span>
+<span id="cb237-18"><a href="dnf-did-not-finish.html#cb237-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb237-19"><a href="dnf-did-not-finish.html#cb237-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>),</span>
+<span id="cb237-20"><a href="dnf-did-not-finish.html#cb237-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>))</span></code></pre></div>
+<p><img src="_main_files/figure-html/unnamed-chunk-217-1.png" width="960" style="display: block; margin: auto;" /></p>
 <p>This figure perhaps further explains the reason behind the insignificant p-value. There is no meaningful trend in the proportion of DNFs over the course of a racing season.</p>
 <p><br>
 <br></p>
@@ -1125,11 +1121,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p><br>
 <br></p>
 <p>Even though this model was a dud, we can attempt to add some clarity by including a year x race number interaction term. This updated interaction model will estimate a race number coefficient for each year of our data (2014 - 2023).</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="dnf-did-not-finish.html#cb29-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.7</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> race_number<span class="sc">:</span>Year, <span class="at">data =</span> races_allyears_dnf_numbered,</span>
-<span id="cb29-2"><a href="dnf-did-not-finish.html#cb29-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span>
-<span id="cb29-3"><a href="dnf-did-not-finish.html#cb29-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-4"><a href="dnf-did-not-finish.html#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="co"># print summary</span></span>
-<span id="cb29-5"><a href="dnf-did-not-finish.html#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(dnf.model<span class="fl">.7</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb238"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb238-1"><a href="dnf-did-not-finish.html#cb238-1" aria-hidden="true" tabindex="-1"></a>dnf.model<span class="fl">.7</span> <span class="ot">&lt;-</span> <span class="fu">glm</span>(DNF <span class="sc">~</span> race_number<span class="sc">:</span>Year, <span class="at">data =</span> races_allyears_dnf_numbered,</span>
+<span id="cb238-2"><a href="dnf-did-not-finish.html#cb238-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&#39;logit&#39;</span>))</span>
+<span id="cb238-3"><a href="dnf-did-not-finish.html#cb238-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb238-4"><a href="dnf-did-not-finish.html#cb238-4" aria-hidden="true" tabindex="-1"></a><span class="co"># print summary</span></span>
+<span id="cb238-5"><a href="dnf-did-not-finish.html#cb238-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(dnf.model<span class="fl">.7</span>)</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## glm(formula = DNF ~ race_number:Year, family = binomial(link = &quot;logit&quot;), 
@@ -1165,49 +1161,49 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>When we look at the summary output from the model, some years are significant while most are not. <em>Oy vey</em>!</p>
 <p>But, I’m not going to let this stop us from creating a cool figure. So, let’s proceed with a visualization.</p>
 <p>Before plotting, I’ll need to construct a prediction grid, make predictions using the model, and then tidy up the predictions ina dataframe.</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="dnf-did-not-finish.html#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Construct a prediction grid</span></span>
-<span id="cb31-2"><a href="dnf-did-not-finish.html#cb31-2" aria-hidden="true" tabindex="-1"></a>model.grid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">race_number =</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">22</span>, <span class="dv">1</span>), </span>
-<span id="cb31-3"><a href="dnf-did-not-finish.html#cb31-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">Year =</span> <span class="fu">c</span>(<span class="st">&#39;2014&#39;</span>, <span class="st">&#39;2015&#39;</span>, <span class="st">&#39;2016&#39;</span>, <span class="st">&#39;2017&#39;</span>, <span class="st">&#39;2018&#39;</span>, <span class="st">&#39;2019&#39;</span>, <span class="st">&#39;2020&#39;</span>, <span class="st">&#39;2021&#39;</span>, <span class="st">&#39;2022&#39;</span>, <span class="st">&#39;2023&#39;</span>))</span>
-<span id="cb31-4"><a href="dnf-did-not-finish.html#cb31-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-5"><a href="dnf-did-not-finish.html#cb31-5" aria-hidden="true" tabindex="-1"></a>model.grid<span class="sc">$</span>prob <span class="ot">&lt;-</span> <span class="fu">predict</span>(dnf.model<span class="fl">.7</span>, <span class="at">type=</span><span class="st">&#39;response&#39;</span>, <span class="at">newdata=</span>model.grid)</span>
-<span id="cb31-6"><a href="dnf-did-not-finish.html#cb31-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-7"><a href="dnf-did-not-finish.html#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="co"># compute the fitted lines and SE&#39;s</span></span>
-<span id="cb31-8"><a href="dnf-did-not-finish.html#cb31-8" aria-hidden="true" tabindex="-1"></a>dnf.model.lines <span class="ot">&lt;-</span> <span class="fu">predict</span>(dnf.model<span class="fl">.7</span>,</span>
-<span id="cb31-9"><a href="dnf-did-not-finish.html#cb31-9" aria-hidden="true" tabindex="-1"></a>          <span class="at">newdata =</span> model.grid,</span>
-<span id="cb31-10"><a href="dnf-did-not-finish.html#cb31-10" aria-hidden="true" tabindex="-1"></a>          <span class="at">type =</span> <span class="st">&quot;link&quot;</span>,</span>
-<span id="cb31-11"><a href="dnf-did-not-finish.html#cb31-11" aria-hidden="true" tabindex="-1"></a>          <span class="at">se.fit =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb31-12"><a href="dnf-did-not-finish.html#cb31-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb31-13"><a href="dnf-did-not-finish.html#cb31-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">ll =</span> fit <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> se.fit,</span>
-<span id="cb31-14"><a href="dnf-did-not-finish.html#cb31-14" aria-hidden="true" tabindex="-1"></a>         <span class="at">ul =</span> fit <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> se.fit) <span class="sc">%&gt;%</span></span>
-<span id="cb31-15"><a href="dnf-did-not-finish.html#cb31-15" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>( <span class="sc">-</span>se.fit) <span class="sc">%&gt;%</span> </span>
-<span id="cb31-16"><a href="dnf-did-not-finish.html#cb31-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate_all</span>(plogis) <span class="sc">%&gt;%</span></span>
-<span id="cb31-17"><a href="dnf-did-not-finish.html#cb31-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_cols</span>(model.grid) <span class="sc">%&gt;%</span></span>
-<span id="cb31-18"><a href="dnf-did-not-finish.html#cb31-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">uncertainty =</span> ul<span class="sc">-</span>ll)</span></code></pre></div>
+<div class="sourceCode" id="cb240"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb240-1"><a href="dnf-did-not-finish.html#cb240-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Construct a prediction grid</span></span>
+<span id="cb240-2"><a href="dnf-did-not-finish.html#cb240-2" aria-hidden="true" tabindex="-1"></a>model.grid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">race_number =</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">22</span>, <span class="dv">1</span>), </span>
+<span id="cb240-3"><a href="dnf-did-not-finish.html#cb240-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">Year =</span> <span class="fu">c</span>(<span class="st">&#39;2014&#39;</span>, <span class="st">&#39;2015&#39;</span>, <span class="st">&#39;2016&#39;</span>, <span class="st">&#39;2017&#39;</span>, <span class="st">&#39;2018&#39;</span>, <span class="st">&#39;2019&#39;</span>, <span class="st">&#39;2020&#39;</span>, <span class="st">&#39;2021&#39;</span>, <span class="st">&#39;2022&#39;</span>, <span class="st">&#39;2023&#39;</span>))</span>
+<span id="cb240-4"><a href="dnf-did-not-finish.html#cb240-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb240-5"><a href="dnf-did-not-finish.html#cb240-5" aria-hidden="true" tabindex="-1"></a>model.grid<span class="sc">$</span>prob <span class="ot">&lt;-</span> <span class="fu">predict</span>(dnf.model<span class="fl">.7</span>, <span class="at">type=</span><span class="st">&#39;response&#39;</span>, <span class="at">newdata=</span>model.grid)</span>
+<span id="cb240-6"><a href="dnf-did-not-finish.html#cb240-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb240-7"><a href="dnf-did-not-finish.html#cb240-7" aria-hidden="true" tabindex="-1"></a><span class="co"># compute the fitted lines and SE&#39;s</span></span>
+<span id="cb240-8"><a href="dnf-did-not-finish.html#cb240-8" aria-hidden="true" tabindex="-1"></a>dnf.model.lines <span class="ot">&lt;-</span> <span class="fu">predict</span>(dnf.model<span class="fl">.7</span>,</span>
+<span id="cb240-9"><a href="dnf-did-not-finish.html#cb240-9" aria-hidden="true" tabindex="-1"></a>          <span class="at">newdata =</span> model.grid,</span>
+<span id="cb240-10"><a href="dnf-did-not-finish.html#cb240-10" aria-hidden="true" tabindex="-1"></a>          <span class="at">type =</span> <span class="st">&quot;link&quot;</span>,</span>
+<span id="cb240-11"><a href="dnf-did-not-finish.html#cb240-11" aria-hidden="true" tabindex="-1"></a>          <span class="at">se.fit =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb240-12"><a href="dnf-did-not-finish.html#cb240-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb240-13"><a href="dnf-did-not-finish.html#cb240-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">ll =</span> fit <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> se.fit,</span>
+<span id="cb240-14"><a href="dnf-did-not-finish.html#cb240-14" aria-hidden="true" tabindex="-1"></a>         <span class="at">ul =</span> fit <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> se.fit) <span class="sc">%&gt;%</span></span>
+<span id="cb240-15"><a href="dnf-did-not-finish.html#cb240-15" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>( <span class="sc">-</span>se.fit) <span class="sc">%&gt;%</span> </span>
+<span id="cb240-16"><a href="dnf-did-not-finish.html#cb240-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate_all</span>(plogis) <span class="sc">%&gt;%</span></span>
+<span id="cb240-17"><a href="dnf-did-not-finish.html#cb240-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_cols</span>(model.grid) <span class="sc">%&gt;%</span></span>
+<span id="cb240-18"><a href="dnf-did-not-finish.html#cb240-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">uncertainty =</span> ul<span class="sc">-</span>ll)</span></code></pre></div>
 <p>Now, I’ll try plotting the model as a grid space, colored by the probability of a DNF.</p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="dnf-did-not-finish.html#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(dnf.model.lines) <span class="sc">+</span></span>
-<span id="cb32-2"><a href="dnf-did-not-finish.html#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>(<span class="fu">aes</span>(race_number, Year, <span class="at">fill=</span>prob)) <span class="sc">+</span></span>
-<span id="cb32-3"><a href="dnf-did-not-finish.html#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_c</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>())<span class="sc">+</span></span>
-<span id="cb32-4"><a href="dnf-did-not-finish.html#cb32-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&#39;Race number of the season&#39;</span>, </span>
-<span id="cb32-5"><a href="dnf-did-not-finish.html#cb32-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Year&#39;</span>,</span>
-<span id="cb32-6"><a href="dnf-did-not-finish.html#cb32-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">fill=</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
-<span id="cb32-7"><a href="dnf-did-not-finish.html#cb32-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;Probability of a DNF by Year and Race Number of the Season&#39;</span>,</span>
-<span id="cb32-8"><a href="dnf-did-not-finish.html#cb32-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;All Grands Prix: 2014 - 2023&#39;</span>) <span class="sc">+</span></span>
-<span id="cb32-9"><a href="dnf-did-not-finish.html#cb32-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span> </span>
-<span id="cb32-10"><a href="dnf-did-not-finish.html#cb32-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_tufte</span>(<span class="at">base_family=</span><span class="st">&quot;Helvetica&quot;</span>)  <span class="sc">+</span></span>
-<span id="cb32-11"><a href="dnf-did-not-finish.html#cb32-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">15</span>),</span>
-<span id="cb32-12"><a href="dnf-did-not-finish.html#cb32-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">13</span>),</span>
-<span id="cb32-13"><a href="dnf-did-not-finish.html#cb32-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="st">&#39;bottom&#39;</span>, </span>
-<span id="cb32-14"><a href="dnf-did-not-finish.html#cb32-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.spacing.x =</span> <span class="fu">unit</span>(<span class="fl">0.5</span>, <span class="st">&#39;cm&#39;</span>),</span>
-<span id="cb32-15"><a href="dnf-did-not-finish.html#cb32-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
-<span id="cb32-16"><a href="dnf-did-not-finish.html#cb32-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
-<span id="cb32-17"><a href="dnf-did-not-finish.html#cb32-17" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="fl">0.5</span>, <span class="at">hjust=</span><span class="dv">1</span>, <span class="at">size =</span> <span class="dv">12</span>),</span>
-<span id="cb32-18"><a href="dnf-did-not-finish.html#cb32-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>))  <span class="sc">+</span></span>
-<span id="cb32-19"><a href="dnf-did-not-finish.html#cb32-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">22</span>, <span class="dv">1</span>),</span>
-<span id="cb32-20"><a href="dnf-did-not-finish.html#cb32-20" aria-hidden="true" tabindex="-1"></a>                     <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">22</span>, <span class="dv">1</span>)) <span class="sc">+</span></span>
-<span id="cb32-21"><a href="dnf-did-not-finish.html#cb32-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">fill =</span> <span class="fu">guide_colorbar</span>(<span class="at">barwidth =</span> <span class="dv">12</span>,</span>
-<span id="cb32-22"><a href="dnf-did-not-finish.html#cb32-22" aria-hidden="true" tabindex="-1"></a>                               <span class="at">barheight =</span> <span class="fl">1.0</span>, </span>
-<span id="cb32-23"><a href="dnf-did-not-finish.html#cb32-23" aria-hidden="true" tabindex="-1"></a>                               <span class="at">title.vjust =</span> <span class="fl">0.75</span>)) </span></code></pre></div>
-<p><img src="_main_files/figure-html/unnamed-chunk-25-1.png" width="960" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb241"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb241-1"><a href="dnf-did-not-finish.html#cb241-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(dnf.model.lines) <span class="sc">+</span></span>
+<span id="cb241-2"><a href="dnf-did-not-finish.html#cb241-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>(<span class="fu">aes</span>(race_number, Year, <span class="at">fill=</span>prob)) <span class="sc">+</span></span>
+<span id="cb241-3"><a href="dnf-did-not-finish.html#cb241-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_c</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>())<span class="sc">+</span></span>
+<span id="cb241-4"><a href="dnf-did-not-finish.html#cb241-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&#39;Race number of the season&#39;</span>, </span>
+<span id="cb241-5"><a href="dnf-did-not-finish.html#cb241-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Year&#39;</span>,</span>
+<span id="cb241-6"><a href="dnf-did-not-finish.html#cb241-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">fill=</span> <span class="st">&#39;Estimated Probability of a DNF&#39;</span>,</span>
+<span id="cb241-7"><a href="dnf-did-not-finish.html#cb241-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&#39;Probability of a DNF by Year and Race Number of the Season&#39;</span>,</span>
+<span id="cb241-8"><a href="dnf-did-not-finish.html#cb241-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;All Grands Prix: 2014 - 2023&#39;</span>) <span class="sc">+</span></span>
+<span id="cb241-9"><a href="dnf-did-not-finish.html#cb241-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span> </span>
+<span id="cb241-10"><a href="dnf-did-not-finish.html#cb241-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_tufte</span>(<span class="at">base_family=</span><span class="st">&quot;Helvetica&quot;</span>)  <span class="sc">+</span></span>
+<span id="cb241-11"><a href="dnf-did-not-finish.html#cb241-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">15</span>),</span>
+<span id="cb241-12"><a href="dnf-did-not-finish.html#cb241-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">13</span>),</span>
+<span id="cb241-13"><a href="dnf-did-not-finish.html#cb241-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="st">&#39;bottom&#39;</span>, </span>
+<span id="cb241-14"><a href="dnf-did-not-finish.html#cb241-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.spacing.x =</span> <span class="fu">unit</span>(<span class="fl">0.5</span>, <span class="st">&#39;cm&#39;</span>),</span>
+<span id="cb241-15"><a href="dnf-did-not-finish.html#cb241-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
+<span id="cb241-16"><a href="dnf-did-not-finish.html#cb241-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
+<span id="cb241-17"><a href="dnf-did-not-finish.html#cb241-17" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="fl">0.5</span>, <span class="at">hjust=</span><span class="dv">1</span>, <span class="at">size =</span> <span class="dv">12</span>),</span>
+<span id="cb241-18"><a href="dnf-did-not-finish.html#cb241-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>))  <span class="sc">+</span></span>
+<span id="cb241-19"><a href="dnf-did-not-finish.html#cb241-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">22</span>, <span class="dv">1</span>),</span>
+<span id="cb241-20"><a href="dnf-did-not-finish.html#cb241-20" aria-hidden="true" tabindex="-1"></a>                     <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">22</span>, <span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb241-21"><a href="dnf-did-not-finish.html#cb241-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">fill =</span> <span class="fu">guide_colorbar</span>(<span class="at">barwidth =</span> <span class="dv">12</span>,</span>
+<span id="cb241-22"><a href="dnf-did-not-finish.html#cb241-22" aria-hidden="true" tabindex="-1"></a>                               <span class="at">barheight =</span> <span class="fl">1.0</span>, </span>
+<span id="cb241-23"><a href="dnf-did-not-finish.html#cb241-23" aria-hidden="true" tabindex="-1"></a>                               <span class="at">title.vjust =</span> <span class="fl">0.75</span>)) </span></code></pre></div>
+<p><img src="_main_files/figure-html/unnamed-chunk-220-1.png" width="960" style="display: block; margin: auto;" /></p>
 <p>Pretty Interesting! Despite the varying amounts of statistical significance, this visualization does a good job of describing how DNF probability varies over the course of each season. For instance, in the early years of the turbo-hybrid era, DNFs were consistently high. The probability then proceeds to drop off toward the end of the era in 2019, 2020, and 2021. We see the same type of progression repeat itself under the new ground effects regulations in 2022 and 2023.</p>
 </div>
 <div id="next-chapter-5" class="section level2 hasAnchor" number="7.5">
